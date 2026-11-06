@@ -1,0 +1,337 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://Scripts/UI/HUDController.cs" id="1_hud"]
+[ext_resource type="PackedScene" path="res://Scenes/ItemCard.tscn" id="2_card"]
+
+[sub_resource type="StyleBoxFlat" id="SidebarStyle"]
+bg_color = Color(0.07, 0.09, 0.14, 0.96)
+border_width_left = 2
+border_width_top = 0
+border_width_right = 0
+border_width_bottom = 0
+border_color = Color(0.27, 0.84, 0.78, 0.55)
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxFlat" id="PortraitStyle"]
+bg_color = Color(0.05, 0.07, 0.11, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.24, 0.3, 0.45, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="DetailsStyle"]
+bg_color = Color(0.1, 0.13, 0.2, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.22, 0.28, 0.42, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="HpFill"]
+bg_color = Color(0.3, 0.82, 0.48, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="ManaFill"]
+bg_color = Color(0.3, 0.75, 0.9, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Sidebar" type="PanelContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 9
+anchor_left = 0.7
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("SidebarStyle")
+
+[node name="SidebarMargin" type="MarginContainer" parent="Root/Sidebar"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="SidebarVBox" type="VBoxContainer" parent="Root/Sidebar/SidebarMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PortraitPanel" type="PanelContainer" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("PortraitStyle")
+
+[node name="PortraitArea" type="Control" parent="Root/Sidebar/SidebarMargin/SidebarVBox/PortraitPanel"]
+layout_mode = 2
+
+[node name="PortraitFallback" type="ColorRect" parent="Root/Sidebar/SidebarMargin/SidebarVBox/PortraitPanel/PortraitArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PortraitTexture" type="TextureRect" parent="Root/Sidebar/SidebarMargin/SidebarVBox/PortraitPanel/PortraitArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PortraitKeyLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox/PortraitPanel/PortraitArea"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -90.0
+offset_top = -18.0
+offset_right = -6.0
+offset_bottom = -4.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)	ext = "-"
+
+[node name="NameLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.92, 0.94, 1, 1)
+horizontal_alignment = 1
+clip_text = true
+text = "-"
+
+[node name="InfoLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.62, 0.68, 0.82, 1)
+horizontal_alignment = 1
+clip_text = true
+text = "-"
+
+[node name="VitalsBox" type="VBoxContainer" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="HpLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox/VitalsBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Health  - / -"
+
+[node name="HpBar" type="ProgressBar" parent="Root/Sidebar/SidebarMargin/SidebarVBox/VitalsBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+theme_override_styles/fill = SubResource("HpFill")
+
+[node name="ManaLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox/VitalsBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Mana  - / -"
+
+[node name="ManaBar" type="ProgressBar" parent="Root/Sidebar/SidebarMargin/SidebarVBox/VitalsBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+theme_override_styles/fill = SubResource("ManaFill")
+
+[node name="LevelLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox/VitalsBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.78, 0.82, 0.95, 1)
+text = "Level 1 • XP 0"
+
+[node name="GoldLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox/VitalsBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.85, 0.78, 0.45, 1)
+text = "Gold: 0"
+
+[node name="EquipmentLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.76, 0.9, 1)
+text = "Equipment"
+
+[node name="EquipRow" type="HBoxContainer" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WeaponCard" parent="Root/Sidebar/SidebarMargin/SidebarVBox/EquipRow" instance=ExtResource("2_card")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ArmourCard" parent="Root/Sidebar/SidebarMargin/SidebarVBox/EquipRow" instance=ExtResource("2_card")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BackpackLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.76, 0.9, 1)
+text = "Backpack — 0/12"
+
+[node name="BackpackScroll" type="ScrollContainer" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="BackpackGrid" type="GridContainer" parent="Root/Sidebar/SidebarMargin/SidebarVBox/BackpackScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 2
+
+[node name="DetailsPanel" type="PanelContainer" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+custom_minimum_size = Vector2(0, 66)
+layout_mode = 2
+theme_override_styles/panel = SubResource("DetailsStyle")
+
+[node name="DetailsVBox" type="VBoxContainer" parent="Root/Sidebar/SidebarMargin/SidebarVBox/DetailsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="DetailsName" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox/DetailsPanel/DetailsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.9, 0.93, 1, 1)
+clip_text = true
+text = "Select an item"
+
+[node name="DetailsText" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox/DetailsPanel/DetailsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.62, 0.68, 0.85, 1)
+autowrap_mode = 2
+text = "Click a backpack or equipment card for details."
+
+[node name="ActionBar" type="HBoxContainer" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="StatusLabel" type="Label" parent="Root/Sidebar/SidebarMargin/SidebarVBox/ActionBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+clip_text = true
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.6, 0.66, 0.8, 1)
+text = ""
+
+[node name="EquipButton" type="Button" parent="Root/Sidebar/SidebarMargin/SidebarVBox/ActionBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+disabled = true
+text = "Equip"
+
+[node name="UnequipButton" type="Button" parent="Root/Sidebar/SidebarMargin/SidebarVBox/ActionBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(76, 0)
+layout_mode = 2
+disabled = true
+text = "Unequip"
+
+[node name="UseButton" type="Button" parent="Root/Sidebar/SidebarMargin/SidebarVBox/ActionBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+disabled = true
+text = "Use"
+
+[node name="SaveButton" type="Button" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+tooltip_text = "Spend one carried save crystal to record a save"
+text = "Save"
+
+[node name="QuitToTitleButton" type="Button" parent="Root/Sidebar/SidebarMargin/SidebarVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Quit to title"
+
+[node name="ToastPanel" type="PanelContainer" parent="Root"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -130.0
+offset_right = 220.0
+offset_bottom = -96.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ToastLabel" type="Label" parent="Root/ToastPanel"]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 2
+text = ""
+
+[node name="ToastTimer" type="Timer" parent="."]
+unique_name_in_owner = true
+wait_time = 2.2
+one_shot = true

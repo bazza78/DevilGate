@@ -1,0 +1,215 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/UI/CharacterCreationController.cs" id="1_cc"]
+
+[node name="CharacterCreation" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_cc")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="HBox" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 28
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="LeftVBox" type="VBoxContainer" parent="Margin/HBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="Margin/HBox/Scroll/LeftVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+text = "New Character"
+
+[node name="NameLabel" type="Label" parent="Margin/HBox/Scroll/LeftVBox"]
+layout_mode = 2
+text = "Name"
+
+[node name="NameEdit" type="LineEdit" parent="Margin/HBox/Scroll/LeftVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+placeholder_text = "e.g. Vex"
+max_length = 40
+
+[node name="NameError" type="Label" parent="Margin/HBox/Scroll/LeftVBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+autowrap_mode = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.45, 1)
+theme_override_font_sizes/font_size = 14
+text = "Name must be 1-24 characters."
+
+[node name="Gap1" type="Control" parent="Margin/HBox/Scroll/LeftVBox"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="ArchetypeLabel" type="Label" parent="Margin/HBox/Scroll/LeftVBox"]
+layout_mode = 2
+text = "Archetype"
+
+[node name="ArchetypeRow" type="HBoxContainer" parent="Margin/HBox/Scroll/LeftVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SpeciesLabel" type="Label" parent="Margin/HBox/Scroll/LeftVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Species: -"
+
+[node name="GenderLabel" type="Label" parent="Margin/HBox/Scroll/LeftVBox"]
+layout_mode = 2
+text = "Gender"
+
+[node name="GenderRow" type="HBoxContainer" parent="Margin/HBox/Scroll/LeftVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AttrHeader" type="Label" parent="Margin/HBox/Scroll/LeftVBox"]
+layout_mode = 2
+text = "Attributes"
+
+[node name="PointsLabel" type="Label" parent="Margin/HBox/Scroll/LeftVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Points remaining: 12"
+
+[node name="AttrGrid" type="GridContainer" parent="Margin/HBox/Scroll/LeftVBox"]
+layout_mode = 2
+columns = 4
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 6
+
+[node name="DerivedLabel" type="Label" parent="Margin/HBox/Scroll/LeftVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Health: -   Mana: -"
+
+[node name="ButtonsRow" type="HBoxContainer" parent="Margin/HBox/Scroll/LeftVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SuggestedButton" type="Button" parent="Margin/HBox/Scroll/LeftVBox/ButtonsRow"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Use Suggested Stats"
+
+[node name="BeginButton" type="Button" parent="Margin/HBox/Scroll/LeftVBox/ButtonsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Begin"
+disabled = true
+
+[node name="BackButton" type="Button" parent="Margin/HBox/Scroll/LeftVBox/ButtonsRow"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Back to Title"
+
+[node name="RightVBox" type="VBoxContainer" parent="Margin/HBox"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PortraitPanel" type="PanelContainer" parent="Margin/HBox/RightVBox"]
+custom_minimum_size = Vector2(0, 460)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PortraitBox" type="Control" parent="Margin/HBox/RightVBox/PortraitPanel"]
+layout_mode = 2
+
+[node name="PortraitFallback" type="ColorRect" parent="Margin/HBox/RightVBox/PortraitPanel/PortraitBox"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.08, 0.16, 1)
+
+[node name="PortraitTexture" type="TextureRect" parent="Margin/HBox/RightVBox/PortraitPanel/PortraitBox"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch_mode = 5
+
+[node name="PortraitKeyLabel" type="Label" parent="Margin/HBox/RightVBox/PortraitPanel/PortraitBox"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -34.0
+offset_right = 200.0
+offset_bottom = -8.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.55)
+horizontal_alignment = 1
+
+[node name="PreviewName" type="Label" parent="Margin/HBox/RightVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "-"
+horizontal_alignment = 1
+
+[node name="PreviewArchetype" type="Label" parent="Margin/HBox/RightVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "-"
+horizontal_alignment = 1
+
+[node name="PreviewSpecies" type="Label" parent="Margin/HBox/RightVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "-"
+horizontal_alignment = 1
+
+[node name="PreviewGender" type="Label" parent="Margin/HBox/RightVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "-"
+horizontal_alignment = 1
+
+[node name="PreviewHint" type="Label" parent="Margin/HBox/RightVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Portraits are placeholders.\nFinal art arrives later."
+horizontal_alignment = 1
+vertical_alignment = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.4)

@@ -1,0 +1,35 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Export presets (local machine paths) are kept; exported binaries are not
+export/
+*.zip
+
+# macOS
+.DS_Store
+
+# Local planning, implementation notes and review documents
+/Docs/
+/Documents/
+/PLAN.md
+/IMPLEMENTATION-PROMPTS.md
+
+# Local exports and editor state
+/build/
+/exports/
+.idea/
+*.csproj.old
+*.log
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
