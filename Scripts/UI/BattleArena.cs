@@ -6,6 +6,7 @@ namespace DevilGate.Scripts;
 public partial class BattleArena : Control
 {
     public bool IsConstruct {get;set;}
+    public bool IsKnight {get;set;}
     public bool IsArcher {get;set;}
     public bool IsHealer {get;set;}
     public bool IsTank {get;set;}
@@ -52,9 +53,9 @@ public partial class BattleArena : Control
     }
     public void Play(string effect,bool hit=true,bool absorbed=false)
     {
-        effect = effect == "evasive_stance" ? "shadow_veil" : effect == "field_dressing" ? "second_wind" : effect == "sanctuary" ? "iron_stance" : effect == "mend" ? "second_wind" : effect;
+        effect = effect == "shield_wall" ? "arcane_ward" : effect == "rally" ? "second_wind" : effect == "evasive_stance" ? "shadow_veil" : effect == "field_dressing" ? "second_wind" : effect == "sanctuary" ? "iron_stance" : effect == "mend" ? "second_wind" : effect;
         Effect=effect;Progress=0;LastActionHit=hit;LastActionAbsorbed=absorbed;
-        if(effect is "potion" or "second_wind" || (effect=="withering_touch" && hit))_healPulse=ComfortSettings.ReducedFlash ? 0 : 1f;
+        if(effect is "potion" or "second_wind" || (effect is "withering_touch" or "rallying_strike" && hit))_healPulse=ComfortSettings.ReducedFlash ? 0 : 1f;
     }
     public void Float(string text,bool enemy,Color colour,int fontSize=20,float offset=0)
     {
@@ -82,7 +83,7 @@ public partial class BattleArena : Control
         var bob=ComfortSettings.ReducedMotion ? 0 : Mathf.Sin(_time*2)*2;
         // Distinct anticipation -> strike -> recovery rhythm for melee attacks; recoil on incoming hits.
         float lunge=0;
-        if(Effect is "staff" or "crushing_blow" or "shield_bash" && !(Effect=="staff" && (IsHealer || IsArcher)))
+        if(Effect is "staff" or "crushing_blow" or "shield_bash" or "commanding_strike" or "rallying_strike" && !(Effect=="staff" && (IsHealer || IsArcher)))
             lunge=Progress<.2f ? -6f*(Progress/.2f) : Progress<.65f ? Mathf.Lerp(-6f,26f,(Progress-.2f)/.45f) : Mathf.Lerp(26f,0f,(Progress-.65f)/.35f);
         else if(Effect=="enemy" && LastActionHit && Progress is >.45f and <.88f)
             lunge=-10f*Mathf.Sin((Progress-.45f)/.43f*Mathf.Pi);
@@ -93,7 +94,16 @@ public partial class BattleArena : Control
         if(!PlayerDefeated)
         {
             if(WardResponses>0)
+            {
                 DrawArc(a+new Vector2(8,-56),38,-Mathf.Pi*.42f,Mathf.Pi*.42f,28,new Color("8bdaef",.82f),3,true);
+                if(IsKnight)
+                {
+                    var shield=new[]{a+new Vector2(12,-83),a+new Vector2(40,-74),a+new Vector2(36,-43),a+new Vector2(21,-26),a+new Vector2(6,-43),a+new Vector2(2,-74)};
+                    DrawColoredPolygon(shield,new Color("72d0e2",.16f));
+                    DrawPolyline(shield.Append(shield[0]).ToArray(),new Color("a4e6f0",.85f),2,true);
+                    DrawLine(a+new Vector2(21,-76),a+new Vector2(21,-38),new Color("a4e6f0",.6f),1,true);
+                }
+            }
             else if(_wardFade>0)
             {
                 float expand=(1f-_wardFade)*14f;
@@ -167,9 +177,19 @@ public partial class BattleArena : Control
             DrawArc(a+new Vector2(0,-52),40+Mathf.Sin(t*Mathf.Pi)*12,-Mathf.Pi*.9f,Mathf.Pi*.9f,48,colour,3,true);
             for(int i=0;i<10;i++)DrawCircle(a+new Vector2(Mathf.Sin(i*2+t*5)*30,-20-t*85-i*3),2,colour);
         }
-        else if(Effect is "staff" or "crushing_blow" or "shield_bash" && !(Effect == "staff" && (IsHealer || IsArcher)))
+        else if(Effect is "staff" or "crushing_blow" or "shield_bash" or "commanding_strike" or "rallying_strike" && !(Effect == "staff" && (IsHealer || IsArcher)))
         {
-            if(IsTank || Effect is "crushing_blow" or "shield_bash")
+            if(IsKnight)
+            {
+                var handle=from+new Vector2(lunge,13);
+                var direction=new Vector2(.55f,-.84f);var side=new Vector2(-direction.Y,direction.X);
+                var guard=handle+direction*13;var tip=guard+direction*(Effect=="commanding_strike"?52:44);
+                DrawLine(handle,guard,new Color("495e70"),5,true);
+                DrawLine(guard-side*10,guard+side*10,new Color("a9c5d8"),4,true);
+                DrawColoredPolygon(new[]{guard-side*5,tip,guard+side*5},new Color("d5edf6"));
+                DrawLine(guard,tip,new Color("6acfdc"),1,true);
+            }
+            else if(IsTank || Effect is "crushing_blow" or "shield_bash")
             {
                 // Heavy scrap-bound club silhouette (distinct from mage focus staff).
                 var handle=from+new Vector2(lunge,12);

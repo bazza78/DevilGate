@@ -44,7 +44,7 @@ public partial class InteractionController
         if(run.Echo.Stage==2)
         {
             if(!run.Echo.MethodAttempted&&run.FilterBattle.Stage==0)
-                panel.AddButton(StarterTraining.IsArcher(run)?"Pinpoint fault · Precision check":StarterTraining.IsHealer(run)?"Cleanse interference · Medicine check":StarterTraining.IsTank(run)?"Brace the casing · Might check":"Stabilise the ward · Arcana check",()=>
+                panel.AddButton(StarterTraining.IsKnight(run)?"Coordinate reset · Leadership check":StarterTraining.IsArcher(run)?"Pinpoint fault · Precision check":StarterTraining.IsHealer(run)?"Cleanse interference · Medicine check":StarterTraining.IsTank(run)?"Brace the casing · Might check":"Stabilise the ward · Arcana check",()=>
                 {
                     var result=EchoMission.AttemptMethod(run);
                     if(result==null)return;

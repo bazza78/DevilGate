@@ -15,6 +15,13 @@ public partial class GuildHallRenderer : Node2D
             DrawPolygon(corners,new[]{c.Lightened(.035f),c,c.Darkened(.03f),c});
             DrawPolyline(new[]{corners[0],corners[1],corners[2],corners[3],corners[0]},new Color("45575d"),.7f,true);
         }
+        // A visible front fascia makes this a substantial room rather than a paper-thin floor.
+        FrontEdge(P(0,9),P(14,9),new Color("2b414b"));
+        FrontEdge(P(14,9),P(14,0),new Color("20343f"));
+        // Reception apron and woven waiting/briefing mats establish separate grounded work areas.
+        Inset(8.3f,2.2f,11.8f,5.4f,new Color("4b5e60"),new Color("81918a"));
+        Inset(1.2f,3.8f,3.8f,6.1f,new Color("294a50"),new Color("8a8f71"));
+        Inset(11.1f,6.6f,13.8f,8.8f,new Color("2f5053"),new Color("92936f"));
         // Woven teal runner through the entrance and toward registration.
         FloorPatch(2.2f,5.9f,10.8f,7.5f,new Color("345454"));
         FloorPatch(9.2f,3.8f,10.8f,7.5f,new Color("345454"));
@@ -28,9 +35,48 @@ public partial class GuildHallRenderer : Node2D
         DrawArc(Vector2.Zero,35,0,Mathf.Tau,64,new Color("b9a77c"),2,true);
         DrawPolyline(new[]{new Vector2(0,-27),new Vector2(9,-7),new Vector2(27,0),new Vector2(9,7),new Vector2(0,27),new Vector2(-9,7),new Vector2(-27,0),new Vector2(-9,-7),new Vector2(0,-27)},new Color("d7c397"),2,true);
         DrawSetTransform(Vector2.Zero,0,Vector2.One);
+        GroundShadows();
         var door=CourtyardRenderer.Door;
         DrawColoredPolygon(new[]{door+new Vector2(-17,-8),door+new Vector2(17,8),door+new Vector2(17,-53),door+new Vector2(-17,-69)},new Color("253d48"));
         DrawPolyline(new[]{door+new Vector2(-17,-8),door+new Vector2(-17,-69),door+new Vector2(17,-53),door+new Vector2(17,8)},new Color("bea981"),3,true);
+    }
+    private void FrontEdge(Vector2 a,Vector2 b,Color colour)
+    {
+        var down=new Vector2(0,12);
+        DrawColoredPolygon(new[]{a,b,b+down,a+down},colour);
+        DrawLine(a,b,new Color("a2ada0"),1.5f,true);
+        DrawLine(a+down,b+down,new Color("162a34"),2,true);
+    }
+    private void Inset(float i,float j,float x,float y,Color fill,Color trim)
+    {
+        FloorPatch(i,j,x,y,fill);
+        DrawPolyline(new[]{P(i,j),P(x,j),P(x,y),P(i,y),P(i,j)},trim,1,true);
+        var seam=new Color(fill.Lightened(.1f),.5f);
+        DrawLine(P(i+.13f,j+.13f),P(x-.13f,j+.13f),seam,1,true);
+    }
+    private void GroundShadows()
+    {
+        foreach(var prop in GuildHallLayout.Furnishings)
+        {
+            var points=GuildHallLayout.Contacts[prop.Cell].Feet.Select(p=>GuildHallLayout.ContactOffset(prop,p)).ToArray();
+            var min=new Vector2(points.Min(p=>p.X),points.Min(p=>p.Y));
+            var max=new Vector2(points.Max(p=>p.X),points.Max(p=>p.Y));
+            var centre=(min+max)*.5f+prop.Anchor;
+            var radii=(max-min)*.5f+new Vector2(3,2);
+            for(int layer=3;layer>=1;layer--)
+            {
+                DrawSetTransform(centre,0,radii*(1+layer*.09f));
+                DrawCircle(Vector2.Zero,1,new Color(0,0,0,.035f));
+            }
+            foreach(var point in points)
+            {
+                float radius=Mathf.Max(3,prop.Width*.043f);
+                DrawSetTransform(prop.Anchor+point+new Vector2(0,.4f),0,new Vector2(radius,radius*.35f));
+                DrawCircle(Vector2.Zero,1,new Color(0,0,0,.22f));
+                DrawCircle(Vector2.Zero,.55f,new Color(0,0,0,.13f));
+            }
+            DrawSetTransform(Vector2.Zero,0,Vector2.One);
+        }
     }
     private void FloorPatch(float i,float j,float x,float y,Color colour)=>DrawColoredPolygon(new[]{P(i,j),P(x,j),P(x,y),P(i,y)},colour);
     private void Wall(Vector2 a,Vector2 b)

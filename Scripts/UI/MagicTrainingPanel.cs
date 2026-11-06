@@ -44,7 +44,7 @@ public partial class MagicTrainingPanel : PanelContainer, ICloseable
         AddThemeStyleboxOverride("panel",new StyleBoxFlat {BgColor=new Color("17232f"),ContentMarginLeft=20,ContentMarginRight=20,ContentMarginTop=16,ContentMarginBottom=16,CornerRadiusTopLeft=8,CornerRadiusTopRight=8,CornerRadiusBottomLeft=8,CornerRadiusBottomRight=8});
         var column=new VBoxContainer();column.AddThemeConstantOverride("separation",8);AddChild(column);
         var header=new HBoxContainer();column.AddChild(header);
-        header.AddChild(new Label {Text=StarterTraining.IsArcher(run)?"Recover your archer training":StarterTraining.IsHealer(run)?"Recover your healer training":StarterTraining.IsTank(run)?"Remember your vanguard training":"Awaken your magic",SizeFlagsHorizontal=SizeFlags.ExpandFill});
+        header.AddChild(new Label {Text=StarterTraining.IsKnight(run)?"Remember your knight training":StarterTraining.IsArcher(run)?"Recover your archer training":StarterTraining.IsHealer(run)?"Recover your healer training":StarterTraining.IsTank(run)?"Remember your vanguard training":"Awaken your magic",SizeFlagsHorizontal=SizeFlags.ExpandFill});
         var close=new Button {Text="Close",CustomMinimumSize=new Vector2(90,36)};header.AddChild(close);
         close.Pressed+=()=>{PrepareClose();CloseRequested?.Invoke();};
         column.AddChild(new Label {Text="Choose two class skills and confirm to equip them. Highlighted changes do not apply until confirmed."});

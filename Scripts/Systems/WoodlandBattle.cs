@@ -69,7 +69,12 @@ public static class WoodlandBattle
             b.Ward=Math.Max(b.Ward,1);
             log=preservedLongerWard
                 ? $"You brace behind your cloak: active ward preserved ({Responses(b.Ward)} of shared +4 defence; does not stack)."
-                : "You brace behind your cloak: +4 defence for 1 enemy response (shared with Arcane Ward; reduces hit chance, not damage).";
+                : $"You brace behind your cloak: +4 defence for 1 enemy response (shared with {(StarterTraining.IsKnight(r)?"Shield Wall":"Arcane Ward")}; reduces hit chance, not damage).";
+        }
+        else if(action=="shield_wall")
+        {
+            r.Character.Mana-=Cost(action);b.Ward=3;
+            log="Shield Wall: +4 defence for 3 enemy responses (hit chance only, 0 absorbed; shared with Guard, does not stack).";
         }
         else if(action=="evasive_stance")
         {
@@ -81,11 +86,11 @@ public static class WoodlandBattle
             r.Character.Mana-=Cost(action);b.IronStance=3;
             log=StarterTraining.ProtectionName(r)+": absorb 2 damage per hit for 3 enemy responses.";
         }
-        else if(action is "second_wind" or "mend" or "field_dressing")
+        else if(action is "second_wind" or "mend" or "field_dressing" or "rally")
         {
             if(r.Character.Hp>=CharacterRules.MaxHealth(r.Character))return "Health is already full.";
             r.Character.Mana-=Cost(action);r.Character.Hp=Math.Min(CharacterRules.MaxHealth(r.Character),r.Character.Hp+(action=="mend"?10:8));
-            log=$"{(action=="mend"?"Mend":action=="field_dressing"?"Field Dressing":"Second Wind")}: restored {r.Character.Hp-hpBefore} HP.";
+            log=$"{(action=="mend"?"Mend":action=="field_dressing"?"Field Dressing":action=="rally"?"Rally":"Second Wind")}: restored {r.Character.Hp-hpBefore} HP.";
         }
         else
         {
@@ -98,6 +103,8 @@ public static class WoodlandBattle
                 switch(action)
                 {
                     case "staff": damage=BasicDamage(r);break;
+                    case "commanding_strike": damage=8;break;
+                    case "rallying_strike": damage=4;r.Character.Hp=Math.Min(CharacterRules.MaxHealth(r.Character),r.Character.Hp+3);break;
                     case "precision_shot": damage=8;break;
                     case "pinning_shot": damage=4;b.Frost=2;break;
                     case "radiant_bolt": damage=6;break;

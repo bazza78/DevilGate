@@ -78,6 +78,7 @@ public partial class CharacterCreationController : Control, ICloseable
             _archetypeId = Ids.ArchetypeMage;
             _genderId = Ids.GenderFemale;
         }
+        if (RoomMode != "rack" && !TestingRoster.AllowsGender(_genderId,_archetypeId)) _genderId = Ids.GenderFemale;
         BuildChoiceButtons();
         BuildAttributeRows();
 
@@ -136,7 +137,7 @@ public partial class CharacterCreationController : Control, ICloseable
             };
             var id = archetype.Id;
             button.Disabled = !TestingRoster.AllowsArchetype(id);
-            if (button.Disabled) button.TooltipText = "Disabled for this test build. Mage, Tank, Archer and Healer are available.";
+            if (button.Disabled) button.TooltipText = "Disabled for this test build. Mage, Tank, Archer, Healer and female Knight are available.";
             button.Pressed += () => OnArchetypePressed(id);
             _archetypeButtons[button] = id;
             _archetypeRow.AddChild(button);
@@ -157,7 +158,7 @@ public partial class CharacterCreationController : Control, ICloseable
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
             button.Disabled = !TestingRoster.AllowsGender(id,_archetypeId);
-            if (button.Disabled) button.TooltipText = "Disabled for this test build. This character option is not enabled.";
+            if (button.Disabled) button.TooltipText = TestingRoster.GenderUnavailableReason(id,_archetypeId);
             button.Pressed += () => OnGenderPressed(id);
             _genderButtons[button] = id;
             _genderRow.AddChild(button);
@@ -225,7 +226,7 @@ public partial class CharacterCreationController : Control, ICloseable
         foreach(var (button,gender) in _genderButtons)
         {
             button.Disabled=!TestingRoster.AllowsGender(gender,id);
-            button.TooltipText=button.Disabled ? "This character option is not enabled for testing." : "";
+            button.TooltipText=button.Disabled ? TestingRoster.GenderUnavailableReason(gender,id) : "";
             button.ButtonPressed=gender==_genderId;
         }
         RefreshAll();
@@ -359,7 +360,7 @@ public partial class CharacterCreationController : Control, ICloseable
         var spent = CharacterRules.BonusSpent(_attributes);
         _pointsLabel.Text = $"Points remaining: {CharacterRules.BonusPoints - spent}";
         _derivedLabel.Text =
-            $"Health: {CharacterRules.MaxHealth(_attributes)}   {(_archetypeId is Ids.ArchetypeTank or Ids.ArchetypeArcher?"Focus":"Mana")}: {CharacterRules.MaxMana(_attributes)}";
+            $"Health: {CharacterRules.MaxHealth(_attributes)}   {(_archetypeId is Ids.ArchetypeTank or Ids.ArchetypeArcher or Ids.ArchetypeKnight?"Focus":"Mana")}: {CharacterRules.MaxMana(_attributes)}";
     }
 
     private void RefreshBegin()

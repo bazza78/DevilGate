@@ -57,14 +57,14 @@ public partial class WoodlandBattlePanel : PanelContainer, ICloseable
         _enemyHealth=new Label();right.AddChild(_enemyHealth);_enemyBar=Bar(new Color("d888b0"));_enemyBar.Name="EnemyHealthBar";right.AddChild(_enemyBar);
         _mana=new Label {Name="BattleEnergyLabel"};_mana.AddThemeFontSizeOverride("font_size",18);_mana.AddThemeColorOverride("font_color",new Color("a3ddff"));left.AddChild(_mana);
         _energyBar=Bar(new Color("64b8ed"));_energyBar.Name="BattleEnergyBar";left.AddChild(_energyBar);
-        _arena=new BattleArena {IsConstruct=WoodlandBattle.IsRelay(run),IsTank=tank,IsHealer=StarterTraining.IsHealer(run),IsArcher=StarterTraining.IsArcher(run)};column.AddChild(_arena);
+        _arena=new BattleArena {IsConstruct=WoodlandBattle.IsRelay(run),IsTank=tank,IsHealer=StarterTraining.IsHealer(run),IsArcher=StarterTraining.IsArcher(run),IsKnight=StarterTraining.IsKnight(run)};column.AddChild(_arena);
         _headline=new Label {Text="Choose a skill or use your free weapon strike.",AutowrapMode=TextServer.AutowrapMode.WordSmart};column.AddChild(_headline);
         _statusChips=new HBoxContainer {Name="BattleStatusChips"};_statusChips.AddThemeConstantOverride("separation",8);column.AddChild(_statusChips);
         _status=new Label {Name="BattleStatusLabel",AutowrapMode=TextServer.AutowrapMode.WordSmart};_status.AddThemeFontSizeOverride("font_size",12);column.AddChild(_status);
         var grid=new GridContainer {Columns=3};column.AddChild(grid);
         // Consistent action order: Attack/Guard -> Skills -> Items (Retreat in footer).
         AddAction(grid,StarterTraining.AttackName(run)+" · Free","staff",$"4 damage on hit · {CharacterRules.DisplayName(StarterTraining.BasicAttribute(run))} roll vs DC 10 (DC 8 when lit) · Instant · Free (0 {StarterTraining.Resource(run).ToLowerInvariant()}).");
-        AddAction(grid,"Guard · Free","guard","+4 defence (hit chance only, 0 absorbed) for 1 enemy response · Automatic (no roll) · Free. Shares +4 defence with Arcane Ward and preserves a longer active ward.");
+        AddAction(grid,"Guard · Free","guard",$"+4 defence (hit chance only, 0 absorbed) for 1 enemy response · Automatic (no roll) · Free. Shares +4 defence with {(StarterTraining.IsKnight(run)?"Shield Wall":"Arcane Ward")} and preserves a longer active ward.");
         foreach(var id in run.LearnedSpellIds)
         {
             var spell=StarterTraining.Skills(run).Single(s=>s.Id==id);
@@ -139,7 +139,7 @@ public partial class WoodlandBattlePanel : PanelContainer, ICloseable
         }
         if(r.Character.Mana<WoodlandBattle.Cost(id))
             return StarterTraining.UsesFocus(r)?"insufficient focus":"insufficient mana";
-        if(id is "second_wind" or "mend" or "field_dressing" && r.Character.Hp>=CharacterRules.MaxHealth(r.Character))
+        if(id is "second_wind" or "mend" or "field_dressing" or "rally" && r.Character.Hp>=CharacterRules.MaxHealth(r.Character))
             return "health already full";
         return null;
     }
@@ -174,7 +174,7 @@ public partial class WoodlandBattlePanel : PanelContainer, ICloseable
         if(!feedback.ActionResolved){_headline.Text=summary;_busy=false;Refresh();return;}
         GameSession.Instance.MarkUnsaved();
         GameAudio.Instance?.Cue(id is "potion" or "mana_potion" ? "potion" : "skill");
-        _arena.WardResponses=id=="guard"?Math.Max(previousWard,1):id=="arcane_ward"&&feedback.PlayerHit==true?3:previousWard;
+        _arena.WardResponses=id=="guard"?Math.Max(previousWard,1):id=="shield_wall" || id=="arcane_ward"&&feedback.PlayerHit==true?3:previousWard;
         _arena.StanceResponses=id is "iron_stance" or "sanctuary"?3:previousStance;
         _arena.VeilResponses=id=="evasive_stance" || id=="shadow_veil"&&feedback.PlayerHit==true?3:previousVeil;
         _arena.QueueRedraw();
@@ -241,14 +241,14 @@ public partial class WoodlandBattlePanel : PanelContainer, ICloseable
         _mana.Text=$"{StarterTraining.Resource(r)} {r.Character.Mana} / {CharacterRules.MaxMana(r.Character)} · Skills cost 3";
         _energyBar.MaxValue=CharacterRules.MaxMana(r.Character);_energyBar.Value=r.Character.Mana;
         foreach(var child in _statusChips.GetChildren()){_statusChips.RemoveChild(child);child.QueueFree();}
-        if(b.Ward>0)_statusChips.AddChild(MakeChip($"◇ Ward +4 DEF (hit chance) · {WoodlandBattle.Responses(b.Ward)}",new Color("8bdaef"),new Color("122838"),new Color("d4f4ff")));
+        if(b.Ward>0)_statusChips.AddChild(MakeChip($"◇ {StarterTraining.WardName(r)} +4 DEF (hit chance) · {WoodlandBattle.Responses(b.Ward)}",new Color("8bdaef"),new Color("122838"),new Color("d4f4ff")));
         if(b.IronStance>0)_statusChips.AddChild(MakeChip($"▤ {StarterTraining.ProtectionName(r)} −2 DMG/hit · {WoodlandBattle.Responses(b.IronStance)}",new Color("e5a766"),new Color("282118"),new Color("ffe6c2")));
         if(b.Veil>0)_statusChips.AddChild(MakeChip($"◐ {StarterTraining.VeilName(r)} +3 DEF (hit chance) · {WoodlandBattle.Responses(b.Veil)}",new Color("c4a5f7"),new Color("211a33"),new Color("eadcff")));
         if(b.Frost>0)_statusChips.AddChild(MakeChip($"▼ Enemy Slowed −2 ATK · {WoodlandBattle.Responses(b.Frost)}",new Color("92eaff"),new Color("142a34"),new Color("d9f8ff")));
         if(b.Lit)_statusChips.AddChild(MakeChip("✦ Exposed · Attack/skill DC 8",new Color("fff3a3"),new Color("2b2918"),new Color("fff9cc")));
         _statusChips.Visible=_statusChips.GetChildCount()>0;
         _status.Text="";
-        if(b.Ward>0)_status.Text+=$"Ward: +4 defence (hit chance only, 0 absorbed), {WoodlandBattle.Responses(b.Ward)} remaining   ";
+        if(b.Ward>0)_status.Text+=$"{StarterTraining.WardName(r)}: +4 defence (hit chance only, 0 absorbed), {WoodlandBattle.Responses(b.Ward)} remaining   ";
         if(b.IronStance>0)_status.Text+=$"{StarterTraining.ProtectionName(r)}: absorb 2 damage per hit, {WoodlandBattle.Responses(b.IronStance)} remaining   ";
         if(b.Veil>0)_status.Text+=$"{StarterTraining.VeilName(r)}: +3 defence (hit chance only), {WoodlandBattle.Responses(b.Veil)} remaining   ";
         if(b.Frost>0)_status.Text+=$"Enemy attack −2: {WoodlandBattle.Responses(b.Frost)} remaining   ";

@@ -6,6 +6,13 @@
 
 ![A woodland battle in DevilGate](.github/images/battle.png)
 
+<details>
+<summary>Inside the Adventurers’ Guild</summary>
+
+![The grounded guild reception in DevilGate](.github/images/guild.png)
+
+</details>
+
 ## The 7% project
 
 I have lots of projects on the go, and I use AI to help with a lot of them.
@@ -42,7 +49,7 @@ apartment, with fragments of another world's memories.
 The playable prototype includes:
 
 - Character identity and stats discovered through the apartment's mirror and equipment rack.
-- Male and female Dark Elf mages, Orc tanks, Elf archers and High Human healers, with class-specific skills and guild records.
+- Male and female Dark Elf mages, Orc tanks, Elf archers and High Human healers, plus a female Human knight, with class-specific skills and guild records. The male knight will follow later.
 - Click-to-move exploration, including holding the mouse button to keep walking.
 - Equipment, inventory, potions and manual saves that consume save crystals.
 - A short route from home through Woodland path and Willow grove to town and the guild.

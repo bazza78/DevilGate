@@ -12,11 +12,12 @@ public partial class BalanceChecks : Node
     {
         int builds = 0, failedBuilds = 0;
         GD.Print("BALANCE CSV: class,gender,pair,runs,wins,wispTurns,guardianTurns,energyUsed,potions,misses,retreats");
-        foreach (string archId in new[] { Ids.ArchetypeMage, Ids.ArchetypeTank, Ids.ArchetypeHealer, Ids.ArchetypeArcher })
+        foreach (string archId in new[] { Ids.ArchetypeMage, Ids.ArchetypeTank, Ids.ArchetypeHealer, Ids.ArchetypeArcher, Ids.ArchetypeKnight })
         foreach (string gender in new[] { Ids.GenderMale, Ids.GenderFemale })
         {
+            if (!TestingRoster.AllowsGender(gender,archId)) continue;
             var arch = GameCatalog.Instance.GetArchetype(archId);
-            var skills = archId == Ids.ArchetypeArcher ? StarterTraining.ArcherSkills : archId == Ids.ArchetypeHealer ? StarterTraining.HealerSkills : archId == Ids.ArchetypeTank ? StarterTraining.TankSkills : MageTraining.Spells;
+            var skills = StarterTraining.SkillsFor(archId);
             for (int a = 0; a < skills.Length; a++) for (int b = a + 1; b < skills.Length; b++)
             {
                 int wins = 0, wispTurns = 0, guardianTurns = 0, energy = 0, potions = 0, misses = 0, retreats = 0;
@@ -40,7 +41,9 @@ public partial class BalanceChecks : Node
                             if (r.Character.Hp <= 12 && r.Backpack.CountItem(Ids.ItemHealthPotion) > 0) action = "potion";
                             else if (r.Character.Mana >= 3)
                             {
-                                if (r.LearnedSpellIds.Contains("field_dressing") && r.Character.Hp <= CharacterRules.MaxHealth(r.Character) - 8) action = "field_dressing";
+                                if (r.LearnedSpellIds.Contains("rally") && r.Character.Hp <= CharacterRules.MaxHealth(r.Character) - 8) action = "rally";
+                                else if (r.LearnedSpellIds.Contains("shield_wall") && state.Ward == 0) action = "shield_wall";
+                                else if (r.LearnedSpellIds.Contains("field_dressing") && r.Character.Hp <= CharacterRules.MaxHealth(r.Character) - 8) action = "field_dressing";
                                 else if (r.LearnedSpellIds.Contains("evasive_stance") && state.Veil == 0) action = "evasive_stance";
                                 else if (r.LearnedSpellIds.Contains("mend") && r.Character.Hp <= CharacterRules.MaxHealth(r.Character) - 10) action = "mend";
                                 else if (r.LearnedSpellIds.Contains("sanctuary") && state.IronStance == 0) action = "sanctuary";
@@ -48,7 +51,7 @@ public partial class BalanceChecks : Node
                                 else if (r.LearnedSpellIds.Contains("iron_stance") && state.IronStance == 0) action = "iron_stance";
                                 else if (r.LearnedSpellIds.Contains("arcane_ward") && state.Ward == 0) action = "arcane_ward";
                                 else if (r.LearnedSpellIds.Contains("shadow_veil") && state.Veil == 0) action = "shadow_veil";
-                                else action = r.LearnedSpellIds.FirstOrDefault(id => id is not ("field_dressing" or "evasive_stance" or "mend" or "sanctuary" or "second_wind" or "iron_stance" or "arcane_ward" or "shadow_veil")) ?? "staff";
+                                else action = r.LearnedSpellIds.FirstOrDefault(id => id is not ("rally" or "shield_wall" or "field_dressing" or "evasive_stance" or "mend" or "sanctuary" or "second_wind" or "iron_stance" or "arcane_ward" or "shadow_veil")) ?? "staff";
                             }
                             var feedback = new BattleTurnFeedback();
                             WoodlandBattle.Act(r, action, die, feedback);

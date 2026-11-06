@@ -29,9 +29,16 @@ public partial class FurnitureSprite : Node2D
         var source = new Rect2(new Vector2(Cell%3,Cell/3)*cellSize,cellSize);
         // The sheet contains generous margins; each cell's ground contact is near its bottom.
         var size = new Vector2(Width,Width*cellSize.Y/cellSize.X);
-        DrawSetTransform(new Vector2(0, 0), 0, new Vector2(1, .35f));
-        DrawCircle(Vector2.Zero, Width * .30f, new Color(0,0,0,.15f));
-        DrawSetTransform(Vector2.Zero, 0, Vector2.One);
-        DrawTextureRectRegion(texture,new Rect2(new Vector2(-size.X*.5f,-size.Y*.94f),size),source);
+        bool guild = AtlasPath == GuildHallLayout.Atlas;
+        var pivot = guild ? GuildHallLayout.Contacts[Cell].Pivot / cellSize : new Vector2(.5f,.94f);
+        if (!guild)
+        {
+            DrawSetTransform(Vector2.Zero, 0, new Vector2(1, .35f));
+            DrawCircle(Vector2.Zero, Width * .30f, new Color(0,0,0,.15f));
+            DrawSetTransform(Vector2.Zero, 0, Vector2.One);
+        }
+        // Guild shadows are painted onto the floor before any sorted props/characters;
+        // fading an occluding sprite must not lift its shadow off the floor as well.
+        DrawTextureRectRegion(texture,new Rect2(-size*pivot,size),source);
     }
 }

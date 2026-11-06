@@ -63,7 +63,7 @@ public partial class TitleController : Control
             button.AddThemeFontSizeOverride("font_size",16);
         }
         GetNode<Label>("%StatusLabel").CustomMinimumSize=new Vector2(0,0);
-        var footer=new Label {Text="Mage · Tank · Archer · Healer   /   Choose your identity in the mirror",Position=new Vector2(64,0),MouseFilter=MouseFilterEnum.Ignore};
+        var footer=new Label {Text="Mage · Tank · Archer · Healer · Knight   /   Choose your identity in the mirror",Position=new Vector2(64,0),MouseFilter=MouseFilterEnum.Ignore};
         footer.AnchorTop=1;footer.AnchorBottom=1;footer.OffsetTop=-29;footer.AddThemeFontSizeOverride("font_size",12);footer.AddThemeColorOverride("font_color",new Color("a9c6cb"));AddChild(footer);
         var chapter=new VBoxContainer {MouseFilter=MouseFilterEnum.Ignore}; chapter.AnchorLeft=.61f;chapter.AnchorRight=.94f;chapter.AnchorTop=.78f;chapter.AnchorBottom=.94f;AddChild(chapter);
         var kicker=new Label {Text="THE OPENING CHAPTER"};kicker.AddThemeFontSizeOverride("font_size",12);kicker.AddThemeColorOverride("font_color",new Color("a7e5d7"));chapter.AddChild(kicker);

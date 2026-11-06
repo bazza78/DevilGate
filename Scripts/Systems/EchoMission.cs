@@ -20,7 +20,7 @@ public static class EchoMission
     {
         if(r.LocationId!="grove"||r.Echo.Stage!=2||r.Echo.MethodAttempted||r.FilterBattle.Stage!=0)return null;
         var tank=StarterTraining.IsTank(r);
-        var roll=new DiceService(dice).Resolve(r.Character,new SkillCheckSpec(StarterTraining.SkillAttribute(r),StarterTraining.CombatSkill(r),12,StarterTraining.IsArcher(r)?"Pinpoint the relay fault":tank?"Brace the relay casing":StarterTraining.IsHealer(r)?"Cleanse the relay interference":"Stabilise the relay ward"),GameCatalog.Instance);
+        var roll=new DiceService(dice).Resolve(r.Character,new SkillCheckSpec(StarterTraining.SkillAttribute(r),StarterTraining.CombatSkill(r),12,StarterTraining.IsKnight(r)?"Coordinate the relay reset":StarterTraining.IsArcher(r)?"Pinpoint the relay fault":tank?"Brace the relay casing":StarterTraining.IsHealer(r)?"Cleanse the relay interference":"Stabilise the relay ward"),GameCatalog.Instance);
         r.Echo.MethodAttempted=true;r.Echo.Stabilized=roll.Success;return roll;
     }
     public static bool HearRecording(RunState r)
