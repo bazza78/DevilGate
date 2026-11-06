@@ -112,6 +112,12 @@ public partial class CharacterCreationController : Control, ICloseable
         }
     }
 
+    public override void _ExitTree()
+    {
+        _archetypeGroup.Dispose();
+        _genderGroup.Dispose();
+    }
+
     // ------------------------------------------------------------------
     // Construction
     // ------------------------------------------------------------------
@@ -130,7 +136,7 @@ public partial class CharacterCreationController : Control, ICloseable
             };
             var id = archetype.Id;
             button.Disabled = !TestingRoster.AllowsArchetype(id);
-            if (button.Disabled) button.TooltipText = "Disabled for this test build. Mage / Dark Elf and Tank / Orc are available.";
+            if (button.Disabled) button.TooltipText = "Disabled for this test build. Mage, Tank, Archer and Healer are available.";
             button.Pressed += () => OnArchetypePressed(id);
             _archetypeButtons[button] = id;
             _archetypeRow.AddChild(button);
@@ -353,7 +359,7 @@ public partial class CharacterCreationController : Control, ICloseable
         var spent = CharacterRules.BonusSpent(_attributes);
         _pointsLabel.Text = $"Points remaining: {CharacterRules.BonusPoints - spent}";
         _derivedLabel.Text =
-            $"Health: {CharacterRules.MaxHealth(_attributes)}   {(_archetypeId==Ids.ArchetypeTank?"Focus":"Mana")}: {CharacterRules.MaxMana(_attributes)}";
+            $"Health: {CharacterRules.MaxHealth(_attributes)}   {(_archetypeId is Ids.ArchetypeTank or Ids.ArchetypeArcher?"Focus":"Mana")}: {CharacterRules.MaxMana(_attributes)}";
     }
 
     private void RefreshBegin()

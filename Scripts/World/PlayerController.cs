@@ -19,7 +19,9 @@ public partial class PlayerController : CharacterBody2D
 
     private Action? _pendingAction;
     private Vector2 _lastPosition;
-    private float _stuckTimer;
+    private float _stuckTimer, _stepTime;
+    private bool _ordered;
+    public event Action? MovementFailed;
 
     public override void _Ready()
     {
@@ -44,12 +46,14 @@ public partial class PlayerController : CharacterBody2D
     public void MoveTo(Vector2 target)
     {
         _pendingAction = null;
+        _ordered = true; _stuckTimer = 0;
         _agent.TargetPosition = target;
     }
 
     /// <summary>Walk to an approach point, then run the action once on arrival.</summary>
     public void MoveToAndAct(Vector2 approachPoint, Action onArrive)
     {
+        _ordered = true; _stuckTimer = 0;
         _pendingAction = onArrive;
         _agent.TargetPosition = approachPoint;
     }
@@ -65,6 +69,7 @@ public partial class PlayerController : CharacterBody2D
     public void Stop()
     {
         _pendingAction = null;
+        _ordered = false;
         _agent.TargetPosition = GlobalPosition;
         Velocity = Vector2.Zero;
     }
@@ -75,6 +80,7 @@ public partial class PlayerController : CharacterBody2D
         if (!TrackPosition) return;
         var run = GameSession.Instance?.CurrentRun;
         if (run == null) return;
+        if (Mathf.Abs(run.PositionX - GlobalPosition.X) > .1f || Mathf.Abs(run.PositionY - GlobalPosition.Y) > .1f) GameSession.Instance?.MarkUnsaved();
         run.PositionX = GlobalPosition.X;
         run.PositionY = GlobalPosition.Y;
     }
@@ -83,6 +89,8 @@ public partial class PlayerController : CharacterBody2D
     {
         if (_agent.IsNavigationFinished())
         {
+            if (_ordered && GlobalPosition.DistanceTo(_agent.TargetPosition) > SafehouseLayout.InteractionRange * 1.6f) MovementFailed?.Invoke();
+            _ordered = false;
             Velocity = Vector2.Zero;
             MoveAndSlide();
             if (_pendingAction != null)
@@ -106,13 +114,18 @@ public partial class PlayerController : CharacterBody2D
         var to = next - GlobalPosition;
         if (to.LengthSquared() > 1f)
         {
-            Velocity = to.Normalized() * Speed;
+            Velocity = Velocity.MoveToward(to.Normalized() * Mathf.Min(Speed, Mathf.Max(40, GlobalPosition.DistanceTo(_agent.TargetPosition) * 6)), (float)delta * 1300);
         }
         else
         {
             Velocity = Vector2.Zero;
         }
         MoveAndSlide();
+        if (GetRealVelocity().Length() > 30)
+        {
+            _stepTime += (float)delta;
+            if (_stepTime > .48f) { _stepTime = 0; Systems.GameAudio.Instance?.Cue("step"); }
+        }
 
         // Stuck watchdog: if we barely moved for a while, give up the path.
         if (GlobalPosition.DistanceTo(_lastPosition) < 0.6f)
@@ -121,8 +134,8 @@ public partial class PlayerController : CharacterBody2D
             if (_stuckTimer > 0.9f)
             {
                 _stuckTimer = 0f;
-                _pendingAction = null;
-                _agent.TargetPosition = GlobalPosition;
+                Stop();
+                MovementFailed?.Invoke();
             }
         }
         else
@@ -130,6 +143,11 @@ public partial class PlayerController : CharacterBody2D
             _stuckTimer = 0f;
         }
         _lastPosition = GlobalPosition;
+    }
+
+    public override void _Notification(int what)
+    {
+        if (what == NotificationApplicationFocusOut && _agent != null) Stop();
     }
 
     public override void _ExitTree()

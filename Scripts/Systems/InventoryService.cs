@@ -149,6 +149,22 @@ public static class InventoryService
         return OperationResult.Ok();
     }
 
+    /// <summary>Deterministic whole-stack transfers. Each failed stack remains intact; gold is collected once.</summary>
+    public static string TakeAll(RunState run, GameCatalog catalog)
+    {
+        int moved = 0, left = 0, gold = run.Chest.Gold;
+        for (int i = 0; i < InventoryState.SlotCount; i++)
+        {
+            var stack = run.Chest.Inventory[i];
+            if (stack == null) continue;
+            int quantity = stack.Quantity;
+            if (MoveStack(run.Chest.Inventory, i, run.Backpack, -1, catalog).Success) moved += quantity;
+            else left += quantity;
+        }
+        if (gold > 0) CollectChestGold(run);
+        return $"Took {moved} items and {gold} gold. {left} items remain in the chest.";
+    }
+
     // ------------------------------------------------------------------
     // Equipment
     // ------------------------------------------------------------------
@@ -224,7 +240,7 @@ public static class InventoryService
             case ItemCategory.ManaPotion:
             {
                 var max = CharacterRules.MaxMana(character);
-                if (character.Mana >= max) return OperationResult.Fail("Mana is already full.");
+                if (character.Mana >= max) return OperationResult.Fail($"{StarterTraining.Resource(run)} is already full.");
                 character.Mana = Math.Min(max, character.Mana + item.ManaAmount);
                 break;
             }

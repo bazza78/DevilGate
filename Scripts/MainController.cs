@@ -25,6 +25,8 @@ public partial class MainController : Node
     {
         if (_currentScreen != null)
         {
+            foreach (var player in _currentScreen.GetChildren().OfType<World.PlayerController>()) player.TrackPosition = false;
+            _currentScreen.ProcessMode = ProcessModeEnum.Disabled;
             _currentScreen.QueueFree();
             _currentScreen = null;
         }

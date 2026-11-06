@@ -24,12 +24,19 @@ public partial class GameSession : Node
     /// <summary>StateVersion at the last successful save/load; null if never saved.</summary>
     public int? SavedVersion { get; private set; }
 
+    public string? LastSaveTime { get; private set; }
+
     public bool HasUnsavedChanges =>
         CurrentRun != null && SavedVersion != StateVersion;
 
     public override void _Ready()
     {
         Instance = this;
+        ProcessMode = ProcessModeEnum.Always;
+        GetTree().AutoAcceptQuit = false;
+        ComfortSettings.Load();
+        AddChild(new GameAudio());
+        AddChild(new UiComfort());
     }
 
     public override void _ExitTree()
@@ -38,6 +45,27 @@ public partial class GameSession : Node
         {
             Instance = null;
         }
+    }
+
+    private bool _quitDialog;
+    public void RequestQuit(Node owner)
+    {
+        if (_quitDialog) return;
+        foreach (var player in GetTree().GetNodesInGroup("route_player").OfType<World.PlayerController>()) { player.Stop(); player.WritePositionToRun(); }
+        if (!HasUnsavedChanges) { GetTree().Quit(); return; }
+        _quitDialog = true;
+        var dialog = new ConfirmationDialog { Title = "Unsaved progress", DialogText = "Quit and lose progress since your last crystal save?", ProcessMode = ProcessModeEnum.Always };
+        owner.AddChild(dialog);
+        dialog.Confirmed += () => GetTree().Quit();
+        dialog.Canceled += () => { _quitDialog = false; dialog.QueueFree(); };
+        dialog.PopupCentered();
+    }
+    public override void _Notification(int what)
+    {
+        if (!IsInsideTree()) return;
+        if (what == NotificationWMCloseRequest) RequestQuit(this);
+        if (what == NotificationApplicationFocusOut && HasRun) GetTree().Paused = true;
+        if (what == NotificationApplicationFocusIn) GetTree().Paused = false;
     }
 
     public bool HasRun => CurrentRun != null;
@@ -134,6 +162,7 @@ public partial class GameSession : Node
         try
         {
             var snapshot = SaveData.FromRun(run);
+            snapshot.SavedAtUtc = DateTimeOffset.UtcNow.ToString("O");
             if (!snapshot.ConsumeOneSaveCrystal())
             {
                 return SaveService.SaveResult.Fail("No save crystal could be consumed.");
@@ -149,6 +178,7 @@ public partial class GameSession : Node
             CurrentRun = snapshot.ToRunState();
             EmitChanged();
             SavedVersion = StateVersion;
+            LastSaveTime = snapshot.SavedAtUtc;
             return SaveService.SaveResult.Ok();
         }
         finally
@@ -169,8 +199,11 @@ public partial class GameSession : Node
         CurrentRun = data.ToRunState();
         EmitChanged();
         SavedVersion = StateVersion;
+        LastSaveTime = data.SavedAtUtc;
         return true;
     }
+
+    public void MarkUnsaved() => StateVersion++;
 
     /// <summary>Announce that run state changed so UI can redraw.</summary>
     public void EmitChanged()

@@ -89,7 +89,9 @@ public partial class SafehouseController : Node2D
         }
         if (run.LocationId != "safehouse") BuildCourtyard();
         else BuildEnvironment();
+        AddChild(new Atmosphere { Area = run.LocationId, ZIndex = 1 });
         SpawnPlayer(run);
+        AddChild(new ArrivalCaption());
         GameSession.Instance!.StateChanged += RefreshPlayerIdentity;
 
         _hud = GD.Load<PackedScene>("res://Scenes/HUD.tscn").Instantiate<HUDController>();
@@ -98,6 +100,8 @@ public partial class SafehouseController : Node2D
         _interaction = new InteractionController();
         AddChild(_interaction);
         _interaction.Initialize(_player!, _hud!);
+        _hud.JournalRequested += () => { if (!_interaction.HasOpenPanel) _interaction.ShowJournal(); };
+        _hud.SettingsRequested += () => { if (!_interaction.HasOpenPanel) _interaction.ShowSettings(); };
         _hud.SettleBeforeSave = SettleForSave;
         RegisterInteractables();
         if (GetParent() is MainController)
@@ -143,15 +147,21 @@ public partial class SafehouseController : Node2D
 
     private string? _pendingDestination;
     private bool _travelling;
-    private void Travel()
+    private async void Travel()
     {
         if (_travelling) return;
-        _travelling=true;
         var session=GameSession.Instance!;
         var run=session.CurrentRun!;
-        _player!.TrackPosition=false;
         var destination=_pendingDestination!;
-        if(!WorldRoute.Adjacent(run.LocationId,destination)) { _travelling=false;_pendingDestination=null;_player.TrackPosition=true;return; }
+        if (!WorldRoute.Adjacent(run.LocationId, destination)) { _pendingDestination = null; return; }
+        _travelling=true;
+        _mouseHeld = false; _player!.Stop();
+        var fade = new CanvasLayer { Layer = 20 }; AddChild(fade);
+        var cover = new ColorRect { Color = Colors.Black, Modulate = new Color(1,1,1,0), MouseFilter = Control.MouseFilterEnum.Stop };
+        cover.SetAnchorsPreset(Control.LayoutPreset.FullRect); fade.AddChild(cover);
+        var tween = CreateTween(); tween.TweenProperty(cover, "modulate:a", 1, Systems.ComfortSettings.ReducedMotion ? .05 : .18);
+        await ToSignal(tween, Tween.SignalName.Finished);
+        _player!.TrackPosition=false;
         bool forward=WorldRoute.Index(destination)>WorldRoute.Index(run.LocationId);
         run.LocationId=destination;
         var spawn=destination=="safehouse" ? SafehouseLayout.DoorApproach : forward ? CourtyardRenderer.Spawn : CourtyardRenderer.ContactApproach;
@@ -198,8 +208,8 @@ public partial class SafehouseController : Node2D
         if(area!="guild")return;
         var npc=new PlayerToken { Position=CourtyardRenderer.Contact+new Vector2(0,-28) };
         AddChild(npc);
-        // This token is not a moving CharacterBody; disable motion processing for the liaison.
-        npc.SetProcess(false);
+        // A small idle breath keeps the liaison distinct from static furnishings.
+        npc.IdleMotion = true;
 
         npc.AddChild(new Label {Text="Diane · Guild receptionist",Position=new Vector2(-65,-75),ZIndex=10});
     }
@@ -389,27 +399,40 @@ public partial class SafehouseController : Node2D
         });
     }
 
-    private bool _mouseHeld;
+    private bool _mouseHeld, _dragActive;
     private Vector2 _lastDrag;
     private float _holdTime;
     private float _dragInterval;
+    public override void _Notification(int what)
+    {
+        if (what == NotificationApplicationFocusOut) { _mouseHeld = false; _player?.Stop(); }
+    }
     public override void _Process(double delta)
     {
-        if(!Input.IsMouseButtonPressed(MouseButton.Left)) { _mouseHeld=false;return; }
-        if(!_mouseHeld || _interaction==null || _interaction.HasOpenPanel) return;
+        if(!Input.IsMouseButtonPressed(MouseButton.Left)) { if (_dragActive) _player?.Stop(); _dragActive=false; _mouseHeld=false;return; }
+        if (_travelling) { _mouseHeld=false; return; }
+        if (_interaction?.HasOpenPanel == true) { _mouseHeld=false; _dragActive=false; return; }
+        if(!_mouseHeld || _interaction==null) return;
         _holdTime+=(float)delta;_dragInterval+=(float)delta;
         var screen=GetViewport().GetMousePosition();
-        if(screen.X>=GetViewport().GetVisibleRect().Size.X*.7f || screen.Y<133 || GetViewport().GuiGetHoveredControl()!=null) return;
+        if(screen.X>=GetViewport().GetVisibleRect().Size.X*.7f || screen.Y<133 || GetViewport().GuiGetHoveredControl()!=null) { if (_dragActive) _player?.Stop(); _dragActive=false; return; }
         var mouse=GetGlobalMousePosition();
         if(_holdTime>.16f && _dragInterval>.08f && mouse.DistanceTo(_lastDrag)>8)
         {
-            _interaction.HandleGroundDrag(mouse);_lastDrag=mouse;_dragInterval=0;
+            _dragActive=true; _interaction.HandleGroundDrag(mouse);_lastDrag=mouse;_dragInterval=0;
         }
     }
 
     public override void _UnhandledInput(InputEvent @event)
     {
         if (_interaction == null) return;
+        if (@event is InputEventKey { Keycode: Key.M, Pressed: true, Echo: false })
+        {
+            if (_interaction.TopPanel is RouteMapPanel) _interaction.HandleEscape();
+            else if (!_interaction.HasOpenPanel) _interaction.ShowRouteMap();
+            GetViewport().SetInputAsHandled(); return;
+        }
+        if (@event is InputEventKey { Keycode: Key.J, Pressed: true, Echo: false } && !_interaction.HasOpenPanel) { _interaction.ShowJournal(); GetViewport().SetInputAsHandled(); return; }
 
         if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true })
         {

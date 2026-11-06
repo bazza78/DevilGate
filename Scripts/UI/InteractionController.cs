@@ -53,13 +53,14 @@ public partial class InteractionController : CanvasLayer
 
     /// <summary>The currently topmost open panel, or null.</summary>
     public Control? TopPanel => _panels.Count > 0 ? _panels.Peek().Panel : null;
+    public string? LastCloseNotice { get; private set; }
 
     public override void _Ready()
     {
         Layer = 5;
         _audio = new InteractionAudio(); AddChild(_audio);
         _markers = new InteractionMarkers(); AddChild(_markers);
-        AddChild(new RouteMiniMap());
+        var map = new RouteMiniMap(); map.OpenRequested += () => { if (!HasOpenPanel) ShowRouteMap(); }; AddChild(map);
         var guidePanel = new PanelContainer { Position = new Vector2(232,18), MouseFilter = Control.MouseFilterEnum.Ignore };
         var style = new StyleBoxFlat { BgColor = new Color(.06f,.1f,.14f,.93f), ContentMarginLeft=14, ContentMarginRight=14, ContentMarginTop=10, ContentMarginBottom=10, CornerRadiusTopLeft=6, CornerRadiusTopRight=6, CornerRadiusBottomLeft=6, CornerRadiusBottomRight=6 };
         guidePanel.AddThemeStyleboxOverride("panel",style);
@@ -84,6 +85,22 @@ public partial class InteractionController : CanvasLayer
         _panelRoot = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         _panelRoot.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(_panelRoot);
+    }
+
+    public override void _Input(InputEvent input)
+    {
+        if (TopPanel == null || input is not InputEventKey { Pressed: true } key) return;
+        var owner = GetViewport().GuiGetFocusOwner();
+        bool tab = key.Keycode == Key.Tab;
+        bool arrow = owner is BaseButton && key.Keycode is Key.Up or Key.Down or Key.Left or Key.Right;
+        if (!tab && !arrow) return;
+        var controls = TopPanel.FindChildren("*", "Control", true, false).OfType<Control>()
+            .Where(c => c.IsVisibleInTree() && c.FocusMode == Control.FocusModeEnum.All && (c is not BaseButton b || !b.Disabled)).ToArray();
+        if (controls.Length == 0) return;
+        int index = Array.IndexOf(controls, owner);
+        int direction = key.ShiftPressed || key.Keycode is Key.Up or Key.Left ? -1 : 1;
+        controls[(index + direction + controls.Length) % controls.Length].GrabFocus();
+        GetViewport().SetInputAsHandled();
     }
 
     public override void _Process(double delta)
@@ -113,6 +130,7 @@ public partial class InteractionController : CanvasLayer
     public void Initialize(PlayerController player, HUDController hud)
     {
         _player = player;
+        player.MovementFailed += () => _hud?.ShowToast("Cannot reach that destination. Try a nearby clear path.");
         _hud = hud;
     }
 
@@ -138,6 +156,7 @@ public partial class InteractionController : CanvasLayer
                 return;
             }
             _audio.Cue("select");
+            _markers.Mark(GetViewport().GetCanvasTransform() * interactable.Approach);
             _player.MoveToAndAct(interactable.Approach, interactable.OnInteract);
             return;
         }
@@ -148,6 +167,7 @@ public partial class InteractionController : CanvasLayer
             _hud?.ShowToast("Cannot reach that.");
             return;
         }
+        _markers.Mark(GetViewport().GetCanvasTransform() * closest);
         _player.MoveTo(closest);
     }
 
@@ -169,6 +189,7 @@ public partial class InteractionController : CanvasLayer
             return;
         }
         _player?.CancelPending();
+        OpenPanel(new ComfortMenu());
     }
 
     private Interactable? NearestInteractable(Vector2 pos)
@@ -206,6 +227,7 @@ public partial class InteractionController : CanvasLayer
         panel.CloseRequested += CloseTopPanel;
         _panels.Push((panel, panel));
         panel.Show();
+        panel.FindChildren("*", "Button", true, false).OfType<Button>().FirstOrDefault(b => !b.Disabled)?.GrabFocus();
         _audio.Cue("open");
     }
 
@@ -213,6 +235,12 @@ public partial class InteractionController : CanvasLayer
     {
         if (_panels.Count == 0) return;
         var (panel, hooks) = _panels.Pop();
+        if (panel is MagicTrainingPanel training)
+        {
+            var notice = training.PrepareClose();
+            LastCloseNotice = notice;
+            if (!string.IsNullOrEmpty(notice)) _hud?.ShowToast(notice);
+        }
         hooks.CloseRequested -= CloseTopPanel;
         panel.Hide();
         panel.QueueFree();
@@ -221,7 +249,11 @@ public partial class InteractionController : CanvasLayer
         {
             _blocker!.Visible = false;
         }
-        else _panels.Peek().Panel.Show();
+        else
+        {
+            var previous = _panels.Peek().Panel; previous.Show();
+            previous.FindChildren("*", "Button", true, false).OfType<Button>().FirstOrDefault(b => !b.Disabled)?.GrabFocus();
+        }
     }
 
     private ModalPanelController CreatePanel(string title, string body)
@@ -231,6 +263,15 @@ public partial class InteractionController : CanvasLayer
         panel.Setup(title, body);
         return panel;
     }
+
+    private void ResponseAt(Vector2 point)
+    {
+        var ring = new World.ResponseRing { Position = point };
+        GetParent().AddChild(ring);
+    }
+    public void ShowRouteMap() => OpenPanel(new RouteMapPanel());
+    public void ShowJournal() => OpenPanel(new JournalPanel());
+    public void ShowSettings() => OpenPanel(new ComfortMenu());
 
     public void ShowWakingIntroduction()
     {
@@ -265,12 +306,15 @@ public partial class InteractionController : CanvasLayer
 
     public void ShowChestPanel()
     {
+        Systems.GameAudio.Instance?.Cue("chest");
+        ResponseAt(SafehouseLayout.ChestFocus);
         var packed = GD.Load<PackedScene>("res://Scenes/ChestPanel.tscn");
         OpenPanel(packed.Instantiate<ChestPanelController>());
     }
 
     public void ShowTerminalPanel()
     {
+        ResponseAt(SafehouseLayout.PcFocus);
         if (GameSession.Instance!.CurrentRun!.CreationStage < 2)
         {
             OpenPanel(CreatePanel("Guild connection", "Identity synchronisation incomplete. Look into the mirror, then choose your training at the equipment rack."));
@@ -308,7 +352,7 @@ public partial class InteractionController : CanvasLayer
         }
         if (!run.MagicAwakened)
         {
-            var panel=CreatePanel(Systems.StarterTraining.IsTank(run)?"The body remembers":"A spark of memory",Systems.StarterTraining.IsTank(run)?"Diane marked your record as Vanguard: a protector trained to hold evacuation routes through the poisoned districts. You do not remember that life, but your body knows how to brace.\n\nThe crystal can synchronise your protective gear and recover your combat instincts. Unlock two starter techniques here; you can retrain freely during testing.":"The guild's induction record mentions a training crystal in your apartment. As you reach towards it, your unfamiliar hands begin to glow.\n\nAttune to unlock two starter skills. You may mix Elemental, Dark and Protective magic, and change your choices here during testing.");
+            var panel=CreatePanel(Systems.StarterTraining.IsArcher(run)?"A steady hand":Systems.StarterTraining.IsHealer(run)?"A healing instinct":Systems.StarterTraining.IsTank(run)?"The body remembers":"A spark of memory",Systems.StarterTraining.IsArcher(run)?"The guild lists you as an Elven archer. The weight of a bow feels familiar, even if your memories do not.\n\nThe crystal can recover your field techniques. Choose two skills for precise shots, control, evasion or recovery. These techniques use focus. You can change your equipped pair here.":Systems.StarterTraining.IsHealer(run)?"The guild lists you as a field healer. Your hands remember the shape of a healing sigil, even if you do not remember learning it.\n\nAttune to the crystal to choose two skills: restore health, protect yourself, or channel light through your wand. Your skills use mana. You can change your equipped pair here.":Systems.StarterTraining.IsTank(run)?"Diane marked your record as Vanguard: a protector trained to hold evacuation routes through the poisoned districts. You do not remember that life, but your body knows how to brace.\n\nThe crystal can synchronise your protective gear and recover your combat instincts. Unlock two starter techniques here; you can retrain freely during testing.":"The guild's induction record mentions a training crystal in your apartment. As you reach towards it, your unfamiliar hands begin to glow.\n\nAttune to unlock two starter skills. You may mix Elemental, Dark and Protective magic, and change your choices here during testing.");
             panel.AddButton("Attune to the crystal",()=>
             {
                 if(!Systems.StarterTraining.Awaken(run))return;
@@ -350,12 +394,12 @@ public partial class InteractionController : CanvasLayer
         bool explainingRobes=false;
         Button? robesButton=null;
         Button? storyButton=null;
-        string storyTitle=Systems.StarterTraining.IsTank(run)?"About my Vanguard record":"About my Arcanist record";
-        if(run.Character.ArchetypeId is Data.Ids.ArchetypeTank or Data.Ids.ArchetypeMage)
+        string storyTitle=Systems.StarterTraining.IsArcher(run)?"About my archer record":Systems.StarterTraining.IsHealer(run)?"About my healer record":Systems.StarterTraining.IsTank(run)?"About my Vanguard record":"About my Arcanist record";
+        if(Systems.StarterTraining.IsSupported(run.Character.ArchetypeId))
         {
             const string tankStory="Diane opens a sealed personnel record.\n\n'Your guild designation is Vanguard. Whoever wore that armour held the evacuation corridor at Ashfall while the other runners got people out. The last entry ends there.'\n\n'You say you remember another world? I will keep that off the public register. You do not owe us someone else’s memories.'\n\n'Activate your drive at home, then use the training crystal on your potion counter. Start with a heavy strike and Iron Stance. We can investigate Ashfall when you are ready.'";
             const string mageStory="Diane unlocks an archive marked ASHFALL.\n\n'Your guild designation is Arcanist. The person in this record studied a signal beneath the old district. Their last message said it sounded like someone calling from another world. Then their focus went silent.'\n\n'Now you are here, wearing their face and remembering a different life. I will keep that private. We need answers before anyone else notices.'\n\n'Activate your drive at home and attune to the crystal. If the woodland wisps react to you, it may be the same signal. Be careful.'";
-            string personalStory=Systems.StarterTraining.IsTank(run)?tankStory:mageStory;
+            string personalStory=Systems.StarterTraining.IsArcher(run)?"Diane checks your guild record.\n\n'An Elven archer. Your bow uses precision, but you also trained to evade attacks and patch yourself up in the field. Activate your account at home, then visit the training crystal. Start with Precision Shot and Evasive Stance.'\n\n'Save your focus when you can. An ordinary bow shot costs no energy.'":Systems.StarterTraining.IsHealer(run)?"Diane opens your guild record.\n\n'You are registered as a field healer. Your wand channels restorative magic, but you can also use it to defend yourself. Activate your account at home, then visit the training crystal. Start with Radiant Bolt and Mend.'\n\n'Out on the woodland route, watch your mana. A free wand pulse can keep you fighting when you need to save energy.'":Systems.StarterTraining.IsTank(run)?tankStory:mageStory;
             storyButton=panel.AddButton(storyTitle,()=>
             {
                 showingStory=!showingStory;explainingRobes=false;
@@ -382,7 +426,9 @@ public partial class InteractionController : CanvasLayer
                 registerButton!.Visible=false;
                 GameSession.Instance.EmitChanged();
                 conversation="Diane checks your details and registers you with the Adventurers' Guild. She hands you a guild card and a small flash drive.\n\n'Welcome. This is your membership card. Use the drive at home to activate your guild account.'\n\nGuild card and access drive received (key items).";
-                if(!Systems.StarterTraining.IsTank(run))conversation+="\n\nDiane studies your file: 'Arcanist… there is a sealed Ashfall record here. Ask me about it before you leave.'";
+                if(Systems.StarterTraining.IsArcher(run))conversation+="\n\nDiane checks your file: 'Archer. Ask me about your record before you leave.'";
+                if(Systems.StarterTraining.IsHealer(run))conversation+="\n\nDiane checks your file: 'Field healer. Ask me about your record before you leave.'";
+                if(run.Character.ArchetypeId==Data.Ids.ArchetypeMage)conversation+="\n\nDiane studies your file: 'Arcanist… there is a sealed Ashfall record here. Ask me about it before you leave.'";
                 if(Systems.StarterTraining.IsTank(run))conversation+="\n\nDiane pauses at your file: 'Vanguard… there is a sealed Ashfall record here. Ask me about it before you leave.'";
                 showingStory=false;if(storyButton!=null)storyButton.Text=storyTitle;
                 explainingRobes=false;robesButton!.Text="Why does everyone wear robes?";

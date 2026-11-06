@@ -66,6 +66,7 @@ public sealed class RunState
     public bool GuildTerminalVisited { get; set; } = true;
     public int CreationStage { get; set; } = 2;
     public bool WakingIntroductionSeen { get; set; } = true;
+    public bool BattleHintDismissed { get; set; }
     public float PositionX { get; set; }
     public float PositionY { get; set; }
 
@@ -81,6 +82,7 @@ public sealed class RunState
         GuildTerminalVisited = GuildTerminalVisited,
         CreationStage = CreationStage,
         WakingIntroductionSeen = WakingIntroductionSeen,
+        BattleHintDismissed = BattleHintDismissed,
         Character = Character.Clone(),
         Backpack = Backpack.Clone(),
         Equipment = Equipment.Clone(),

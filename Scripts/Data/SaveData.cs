@@ -10,6 +10,7 @@ public sealed class SaveData
 {
     public const int CurrentVersion = 1;
 
+    public string? SavedAtUtc { get; set; }
     public int Version { get; set; } = CurrentVersion;
     public string RunId { get; set; } = "";
     public string Name { get; set; } = "";
@@ -42,6 +43,7 @@ public sealed class SaveData
     public bool GuildTerminalVisited { get; set; } = true;
     public int CreationStage { get; set; } = 2;
     public bool WakingIntroductionSeen { get; set; } = true;
+    public bool BattleHintDismissed { get; set; }
     public float PositionX { get; set; }
     public float PositionY { get; set; }
 
@@ -82,6 +84,7 @@ public sealed class SaveData
             GuildTerminalVisited = run.GuildTerminalVisited,
             CreationStage = run.CreationStage,
             WakingIntroductionSeen = run.WakingIntroductionSeen,
+            BattleHintDismissed = run.BattleHintDismissed,
             PositionX = run.PositionX,
             PositionY = run.PositionY,
             DiagnosticAttempted = c.Diagnostic.Attempted,
@@ -105,6 +108,7 @@ public sealed class SaveData
             GuildTerminalVisited = GuildTerminalVisited,
             CreationStage = CreationStage,
             WakingIntroductionSeen = WakingIntroductionSeen,
+            BattleHintDismissed = BattleHintDismissed,
             PositionX = PositionX,
             PositionY = PositionY,
         };

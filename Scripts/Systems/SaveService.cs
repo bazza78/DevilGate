@@ -140,7 +140,7 @@ public static class SaveService
         if(data.FilterBattle.Stage is 1 or 3 && data.LocationId!="grove")return "Active relay battle must be saved in Willow grove.";
         var magicError = StarterTraining.Validate(data.ArchetypeId,data.MagicAwakened,data.LearnedSpellIds);
         if(magicError != null) return magicError;
-        if(data.MagicAwakened && (data.ArchetypeId is not (Ids.ArchetypeMage or Ids.ArchetypeTank) || data.CreationStage != 2 || data.InductionStage != 3)) return "Invalid magic training progression.";
+        if(data.MagicAwakened && (!StarterTraining.IsSupported(data.ArchetypeId) || data.CreationStage != 2 || data.InductionStage != 3)) return "Invalid magic training progression.";
         if (data.CreationStage < 0 || data.CreationStage > 2) return "Invalid character setup stage.";
         if (data.Version != SaveData.CurrentVersion)
         {

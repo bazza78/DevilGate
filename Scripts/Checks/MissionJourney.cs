@@ -6,6 +6,7 @@ namespace DevilGate.Scripts.Checks;
 public partial class MissionJourney : Node
 {
     private int _fail;
+    private double _travelSeconds;
     private void Check(bool ok,string text) {GD.Print($"MISSION {(ok?"PASS":"FAIL")}: {text}");if(!ok)_fail++;}
     private async Task Frames(int count) {for(int i=0;i<count;i++)await ToSignal(GetTree(),SceneTree.SignalName.PhysicsFrame);}
     private static void Press(Control panel,string text)
@@ -39,8 +40,10 @@ public partial class MissionJourney : Node
             main.ShowSafehouse();await Frames(15);
             foreach(var destination in new[]{"grove","town","guild"})
             {
+                var travelStarted = DateTime.UtcNow;
                 UI().HandleWorldClick(CourtyardRenderer.ContactApproach+new Vector2(0,-20));
                 for(int i=0;i<600 && !UI().HasOpenPanel;i++)await Frames(1);
+                _travelSeconds += (DateTime.UtcNow - travelStarted).TotalSeconds;
                 Press(UI().TopPanel!,"Travel");await Frames(40);
                 Check(session.CurrentRun!.LocationId==destination,"walk and travel to "+destination);
                 Check(session.SaveGame().Success && session.TryLoadGame(out _) && session.CurrentRun!.LocationId==destination,"save/load in "+destination);
@@ -71,8 +74,10 @@ public partial class MissionJourney : Node
             UI().HandleEscape();
             foreach(var destination in new[]{"town","grove","woodland","safehouse"})
             {
+                var travelStarted = DateTime.UtcNow;
                 UI().HandleWorldClick(CourtyardRenderer.Door+new Vector2(0,-20));
                 for(int i=0;i<600 && !UI().HasOpenPanel;i++)await Frames(1);
+                _travelSeconds += (DateTime.UtcNow - travelStarted).TotalSeconds;
                 Press(UI().TopPanel!,"Travel");await Frames(40);
                 Check(session.CurrentRun!.LocationId==destination,"return to "+destination);
             }
@@ -87,6 +92,7 @@ public partial class MissionJourney : Node
             Check(!InductionMission.Accept(unfinished),"unfinished characters cannot accept mission");
         }
         catch(Exception ex) {GD.PrintErr(ex);_fail++;}
+        GD.Print($"MISSION TRAVEL: {_travelSeconds:F2} seconds of scripted walking across seven forward/return area crossings; excludes reading, menus and fades");
         GD.Print($"MISSION JOURNEY: {_fail} failures");GetTree().Quit(_fail==0?0:1);
     }
 }

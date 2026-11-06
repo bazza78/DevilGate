@@ -34,6 +34,30 @@ public partial class MagicChecks : Node
         var chosen=boxes.First(b=>b.ButtonPressed);
         var unchosen=boxes.First(b=>!b.ButtonPressed);
         Check(((StyleBoxFlat)chosen.GetThemeStylebox("normal")).BgColor != ((StyleBoxFlat)unchosen.GetThemeStylebox("hover")).BgColor,"selected skills remain distinct from hover");
+        // Every mage starter spell states effect, 3 mana cost, roll requirement and duration.
+        Check(MageTraining.Spells.All(s=>s.Description.Contains("3 mana") && s.Description.Contains("Arcana (Willpower) roll vs DC 10") && (s.Description.Contains("Instant") || s.Description.Contains("enemy responses") || s.Description.Contains("for the encounter"))),"all mage skills explain effect, roll, duration and mana cost");
+        var equippedLabel=panel.FindChildren("EquippedPairLabel","Label",true,false).OfType<Label>().Single();
+        var resultLabel=panel.FindChildren("TrainingResultLabel","Label",true,false).OfType<Label>().Single();
+        Check(equippedLabel.Text.Contains("Mage Light, Arcane Ward") && !panel.HasUnconfirmedChanges,"equipped pair shown when matching selection");
+        // Change selection without confirming: unconfirmed choice is distinguished from equipped pair.
+        var mageLightBox=boxes.Single(b=>b.Text.StartsWith("Mage Light"));
+        var emberBoltBox=boxes.Single(b=>b.Text.StartsWith("Ember Bolt"));
+        mageLightBox.ButtonPressed=false;
+        emberBoltBox.ButtonPressed=true;
+        Check(panel.HasUnconfirmedChanges && mageLightBox.Text.Contains("[Equipped · unticked]") && emberBoltBox.Text.Contains("[Selected · unconfirmed]"),"unconfirmed selection distinguished from equipped skills");
+        Check(equippedLabel.Text.Contains("Equipped pair (active for battle): Mage Light, Arcane Ward") && equippedLabel.Text.Contains("Unconfirmed selection: Ember Bolt, Arcane Ward"),"header separates equipped pair from unconfirmed selection");
+        Check(resultLabel.Text.Contains("Unconfirmed selection") && resultLabel.Text.Contains("unchanged"),"panel warns that closing without confirming keeps equipped pair");
+        var closeBtn=panel.FindChildren("*","Button",true,false).OfType<Button>().Single(b=>b.Text=="Close");
+        closeBtn.EmitSignal(BaseButton.SignalName.Pressed);
+        Check(run.LearnedSpellIds.SequenceEqual(new[]{"mage_light","arcane_ward"}) && panel.CloseNotice!=null && panel.CloseNotice.Contains("equipped pair unchanged (Mage Light, Arcane Ward)"),"closing without confirming leaves equipped pair unchanged and explains why");
+        // Also verify Escape close through InteractionController records the unconfirmed close notice.
+        var ui=new InteractionController();AddChild(ui);ui.ShowMagicTraining();
+        var modalTraining=(MagicTrainingPanel)ui.TopPanel!;
+        var modalBoxes=modalTraining.FindChildren("*","CheckBox",true,false).OfType<CheckBox>().ToArray();
+        modalBoxes.Single(b=>b.Text.StartsWith("Mage Light")).ButtonPressed=false;
+        modalBoxes.Single(b=>b.Text.StartsWith("Ember Bolt")).ButtonPressed=true;
+        ui.HandleEscape();
+        Check(!ui.HasOpenPanel && run.LearnedSpellIds.SequenceEqual(new[]{"mage_light","arcane_ward"}) && ui.LastCloseNotice!=null && ui.LastCloseNotice.Contains("equipped pair unchanged"),"Escape close without confirming preserves equipped pair and records explanation");
         SaveService.DirectoryOverride="/tmp/devilgate-magic-check";
         run.Backpack[0]=new ItemStack(Ids.ItemSaveCrystal,3);
         Check(session.SaveGame().Success,"crystal save with learned spells succeeds");

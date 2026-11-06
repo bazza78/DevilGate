@@ -44,7 +44,7 @@ public partial class InteractionController
         if(run.Echo.Stage==2)
         {
             if(!run.Echo.MethodAttempted&&run.FilterBattle.Stage==0)
-                panel.AddButton(StarterTraining.IsTank(run)?"Brace the casing · Might check":"Stabilise the ward · Arcana check",()=>
+                panel.AddButton(StarterTraining.IsArcher(run)?"Pinpoint fault · Precision check":StarterTraining.IsHealer(run)?"Cleanse interference · Medicine check":StarterTraining.IsTank(run)?"Brace the casing · Might check":"Stabilise the ward · Arcana check",()=>
                 {
                     var result=EchoMission.AttemptMethod(run);
                     if(result==null)return;
@@ -65,7 +65,7 @@ public partial class InteractionController
                 GameSession.Instance!.EmitChanged();CloseTopPanel();ShowFilterRelay();
                 if(TopPanel is ModalPanelController updated)updated.SetBody(EchoMission.Recording+"\n\nReset the relay and seal the filter sample when ready.");
             });
-            if(run.Echo.RecordingHeard)panel.AddButton("Reset relay & seal sample",()=>{if(EchoMission.Collect(run))Reopen();});
+            if(run.Echo.RecordingHeard)panel.AddButton("Reset relay & seal sample",()=>{if(EchoMission.Collect(run)){GameAudio.Instance?.Cue("relay");Reopen();}});
         }
         OpenPanel(panel);
     }

@@ -338,6 +338,64 @@ public partial class CheckRunner : Node
         healRun.Backpack[crSlot] = new ItemStack(Ids.ItemSaveCrystal, 1);
         r = InventoryService.UseBackpackItem(healRun, crSlot, catalog);
         Check(!r.Success && healRun.Backpack[crSlot]?.Quantity == 1, "save crystal rejected by Use");
+
+        // UI selection & scroll persistence (Card 4a: HUDController, ChestPanelController, ItemCardController).
+        var uiRun = NewRunFor(Ids.ArchetypeMage);
+        GameSession.Instance!.SetCurrentRunForTesting(uiRun);
+        var chestPanel = GD.Load<PackedScene>("res://Scenes/ChestPanel.tscn").Instantiate<ChestPanelController>();
+        AddChild(chestPanel);
+        // Chest slot 2 has Health Potion x2; click to select.
+        chestPanel.ChestCards[2].Select();
+        Check(chestPanel.IsChestSelection && chestPanel.SelectedSlot == 2 && chestPanel.ChestCards[2].IsSelected, "chest card click selects slot 2");
+        chestPanel.GetNode<Button>("%MoveOneButton").EmitSignal(BaseButton.SignalName.Pressed);
+        Check(chestPanel.IsChestSelection && chestPanel.SelectedSlot == 2 && chestPanel.ChestCards[2].IsSelected && uiRun.Chest.Inventory[2]?.Quantity == 1,
+            "chest selection persists after MoveOne when stack still has items");
+        chestPanel.GetNode<Button>("%MoveOneButton").EmitSignal(BaseButton.SignalName.Pressed);
+        Check(chestPanel.SelectedSlot == -1 && !chestPanel.ChestCards[2].IsSelected && chestPanel.GetNode<Button>("%MoveOneButton").Disabled,
+            "chest selection clears gracefully when final item in slot is moved");
+        // Move starter staff & jacket into backpack as well.
+        chestPanel.ChestCards[0].Select();
+        chestPanel.GetNode<Button>("%MoveOneButton").EmitSignal(BaseButton.SignalName.Pressed);
+        chestPanel.ChestCards[1].Select();
+        chestPanel.GetNode<Button>("%MoveOneButton").EmitSignal(BaseButton.SignalName.Pressed);
+        chestPanel.QueueFree();
+
+        var hud = GD.Load<PackedScene>("res://Scenes/HUD.tscn").Instantiate<HUDController>();
+        AddChild(hud);
+        Check(hud.WeaponCard.GetNode<Label>("EmptyState/EmptyLabel").Text == "Weapon · Empty"
+            && hud.ArmourCard.GetNode<Label>("EmptyState/EmptyLabel").Text == "Armour · Empty",
+            "empty equipment slots label Weapon and Armour distinctly");
+        Check(hud.BackpackCards[0].TooltipText.Contains("Health Potion") && hud.BackpackCards[1].TooltipText.Contains("Apprentice Focus Staff")
+            && hud.BackpackCards[1].GetNode<Label>("Content/Info/NameLabel").Text == "Focus Staff",
+            "item cards show clean short title on card and full item name/details on hover");
+        Check(hud.BackpackCards[11].Modulate.A < 0.5f && hud.BackpackCards[0].Modulate.A == 1f,
+            "empty backpack slots render quieter than populated item cards");
+
+        hud.BackpackScrollVertical = 42;
+        var actualScroll = hud.BackpackScrollVertical; // Godot clamps to the laid-out content range.
+        uiRun.Character.Hp = 10;
+        // Backpack slot 0 has Health Potion x2; select and use once -> selection & scroll stay.
+        hud.BackpackCards[0].Select();
+        Check(hud.SelectedBackpackSlot == 0 && hud.BackpackCards[0].IsSelected, "HUD selects backpack slot 0");
+        hud.GetNode<Button>("%UseButton").EmitSignal(BaseButton.SignalName.Pressed);
+        Check(hud.SelectedBackpackSlot == 0 && hud.BackpackCards[0].IsSelected && uiRun.Backpack[0]?.Quantity == 1 && hud.BackpackScrollVertical == actualScroll,
+            "HUD preserves backpack selection and scroll position after using one potion from a stack");
+        uiRun.Character.Hp = 10;
+        hud.GetNode<Button>("%UseButton").EmitSignal(BaseButton.SignalName.Pressed);
+        Check(hud.SelectedBackpackSlot == -1 && !hud.BackpackCards[0].IsSelected && hud.BackpackScrollVertical == actualScroll,
+            "HUD clears selection gracefully when final potion is consumed while preserving scroll");
+
+        // Select Apprentice Focus Staff in slot 1 and Equip -> selection follows to equipped Weapon slot.
+        hud.BackpackCards[1].Select();
+        Check(hud.GetNode<Label>("%DetailsName").Text.Contains("Apprentice Focus Staff"), "details panel shows full unabbreviated item name");
+        hud.GetNode<Button>("%EquipButton").EmitSignal(BaseButton.SignalName.Pressed);
+        Check(hud.SelectedEquipmentSlot == EquipmentSlotKind.Weapon && hud.WeaponCard.IsSelected && hud.WeaponCard.IsEquipped
+            && hud.WeaponCard.GetNode<Label>("Content/Info/InfoLabel").Text.Contains("Equipped • Weapon"),
+            "equipping weapon marks card as Equipped and preserves selection on the equipped item");
+        hud.GetNode<Button>("%UnequipButton").EmitSignal(BaseButton.SignalName.Pressed);
+        Check(hud.SelectedBackpackSlot >= 0 && hud.BackpackCards[hud.SelectedBackpackSlot].IsSelected,
+            "unequipping weapon preserves selection on the returned backpack slot");
+        hud.QueueFree();
     }
 
     private static int FindSlot(InventoryState inv, string itemId)

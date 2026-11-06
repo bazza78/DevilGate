@@ -42,6 +42,7 @@ public partial class TankChecks : Node
             Check(OpeningGuidance.Next(run).Text.Contains("Ready to explore"),"tank progression reaches ready state");
             ui.ShowMagicTraining();var training=ui.TopPanel!;
             Check(training.FindChildren("*","CheckBox",true,false).Count==4,"tank training lists four techniques");
+            Check(StarterTraining.TankSkills.All(s=>s.Description.Contains("3 focus") && (s.Description.Contains("Athletics (Might) roll vs DC 10") || s.Description.Contains("Automatic (no roll)")) && (s.Description.Contains("Instant") || s.Description.Contains("enemy responses"))),"all tank skills explain effect, roll/automatic, duration and focus cost");
             Press(training,"Close");run.LocationId="woodland";
             Check(WoodlandBattle.Start(run),"trained tank can enter encounter");
             int hp=run.Character.Hp;var feedback=new BattleTurnFeedback();
@@ -74,6 +75,9 @@ public partial class TankChecks : Node
             while(battle.IsAnimating)await ToSignal(GetTree(),SceneTree.SignalName.ProcessFrame);
             Check(battle.FindChildren("PlayerHealthBar","ProgressBar",true,false).OfType<ProgressBar>().Single().Value==43,"animated tank health ends at reduced damage");
             Check(battle.FindChildren("*","Label",true,false).OfType<Label>().Any(l=>l.Text.Contains("4 base − 2 absorbed = 2 HP")),"visible battle summary explains reduction");
+            Check(battle.FindChildren("*","Label",true,false).OfType<Label>().Any(l=>l.Text.Contains("Iron Stance: absorb 2 damage per hit, 2 enemy responses remaining")),"tank status displays remaining enemy responses and absorption");
+            var stanceButton=battle.FindChildren("*","Button",true,false).OfType<Button>().Single(b=>b.Text.StartsWith("Iron Stance"));
+            Check(stanceButton.TooltipText.Contains("3 enemy responses") && StarterTraining.TankSkills.Single(s=>s.Id=="iron_stance").Description.Contains("3 enemy responses"),"tank selection and tooltip share enemy response duration convention");
         }
         catch(Exception e){GD.PrintErr(e);_failed++;}
         GD.Print($"TANK CHECKS: {_failed} failures");GetTree().Quit(_failed==0?0:1);

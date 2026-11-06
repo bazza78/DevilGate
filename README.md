@@ -1,5 +1,7 @@
 # DevilGate
 
+![The DevilGate opening screen](.github/images/title.png)
+
 ![The DevilGate safehouse](.github/images/home.png)
 
 ![A woodland battle in DevilGate](.github/images/battle.png)
@@ -40,7 +42,7 @@ apartment, with fragments of another world's memories.
 The playable prototype includes:
 
 - Character identity and stats discovered through the apartment's mirror and equipment rack.
-- Male and female Dark Elf mages and Orc tanks, with class-specific skills and guild histories.
+- Male and female Dark Elf mages, Orc tanks, Elf archers and High Human healers, with class-specific skills and guild records.
 - Click-to-move exploration, including holding the mouse button to keep walking.
 - Equipment, inventory, potions and manual saves that consume save crystals.
 - A short route from home through Woodland path and Willow grove to town and the guild.
@@ -62,6 +64,23 @@ and testing currently target macOS; other platforms have not been verified.
 
 You can also run `dotnet build` from the project folder, then launch the
 project with your Godot .NET executable.
+
+## Controls and comfort
+
+Click to walk or approach an object; hold the mouse button to keep walking.
+Double-click a backpack item to equip/use it, or Shift-click in the chest to
+move a whole stack. **J** opens the journal. **M** or clicking the minimap opens
+the area map, with the five-area route, landmarks and your current objective.
+**Escape** closes an ordinary
+panel first, then opens settings; active encounters must be finished or
+retreated from using their controls.
+
+Settings include saved audio levels, text size, faster battle presentation,
+and reduced motion/flashes. Saving still spends one carried crystal; an
+asterisk by Save indicates unsaved progress. Continue shows the saved
+character and objective.
+
+![The expanded area map in DevilGate](.github/images/map.png)
 
 ## Contributing
 

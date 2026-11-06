@@ -21,7 +21,7 @@ public partial class IntroChecks : Node
         var mirror = GD.Load<PackedScene>("res://Scenes/CharacterCreation.tscn").Instantiate<CharacterCreationController>();
         mirror.RoomMode = "mirror"; AddChild(mirror);
         var choices=mirror.GetNode<HBoxContainer>("Margin/HBox/Scroll/LeftVBox/ArchetypeRow").GetChildren().OfType<Button>().ToArray();
-        Check(choices.Count(b=>!b.Disabled)==2 && !choices.Single(b=>b.Text=="Mage").Disabled,"mage and tank selectable in test roster");
+        Check(choices.Count(b=>!b.Disabled)==4 && !choices.Single(b=>b.Text=="Mage").Disabled,"mage, tank, archer and healer selectable in test roster");
         Check(mirror.GetNode<HBoxContainer>("Margin/HBox/Scroll/LeftVBox/GenderRow").GetChildren().OfType<Button>().Single(b=>b.Text=="Male").Disabled==false,"male mage choice enabled");
         Check(mirror.GetNode<TextureRect>("%PortraitTexture").Texture?.ResourcePath == "res://Assets/Portraits/mage_female.png","supplied portrait displayed in mirror");
         var maleChoice=mirror.GetNode<HBoxContainer>("Margin/HBox/Scroll/LeftVBox/GenderRow").GetChildren().OfType<Button>().Single(b=>b.Text=="Male");

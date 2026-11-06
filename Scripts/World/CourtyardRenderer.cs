@@ -4,6 +4,8 @@ namespace DevilGate.Scripts.World;
 /// <summary>The saved courtyard ID is retained for compatibility; visually this is a neighbourhood park.</summary>
 public partial class CourtyardRenderer : Node2D
 {
+    private float _time;
+    public override void _Process(double delta) { if (!Systems.ComfortSettings.ReducedMotion) _time += (float)delta; QueueRedraw(); }
     public string Area { get; set; } = "courtyard";
     public static readonly Rect2 Bounds=new(0,150,850,480);
     public static Vector2 Spawn=>SafehouseLayout.Iso(3,7);
@@ -86,6 +88,7 @@ public partial class CourtyardRenderer : Node2D
     {
         DrawSetTransform(p,0,new Vector2(1,.4f));DrawCircle(Vector2.Zero,30,new Color(0,0,0,.18f));DrawSetTransform(Vector2.Zero,0,Vector2.One);
         DrawLine(p,p+new Vector2(0,-42),new Color("655e48"),7,true);
+        p += new Vector2(Mathf.Sin(_time * .65f + p.X) * 1.3f, 0);
         DrawCircle(p+new Vector2(0,-46),24,new Color("244d40"));
         DrawCircle(p+new Vector2(-8,-55),21,new Color("3b6b52"));
         DrawCircle(p+new Vector2(8,-62),17,new Color("508064"));

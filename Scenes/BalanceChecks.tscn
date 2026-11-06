@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://Scripts/Checks/BalanceChecks.cs" id="1"]
+[node name="BalanceChecks" type="Node"]
+script = ExtResource("1")

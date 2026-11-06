@@ -37,8 +37,8 @@ public static class OpeningGuidance
         }
         if (run.InductionStage == 1) return ("First Connection · Step outside\nFollow the paths into town and visit guild reception.","outside_door");
         if (run.InductionStage == 2) return ("First Connection · Activate your guild account\nUse your new drive at home to activate your account and claim your allowance.","mission_pc");
-        if (run.InductionStage == 3 && run.Character.ArchetypeId is Ids.ArchetypeMage or Ids.ArchetypeTank && run.LearnedSpellIds.Length == 0)
-            return (Systems.StarterTraining.IsTank(run)?"The body remembers · Train as a Vanguard\nVisit the crystal on the potion counter to choose two techniques.":"A spark of memory · Awaken your magic\nVisit the enchanted crystal on the potion counter.","training_crystal");
+        if (run.InductionStage == 3 && Systems.StarterTraining.IsSupported(run.Character.ArchetypeId) && run.LearnedSpellIds.Length == 0)
+            return (Systems.StarterTraining.IsArcher(run)?"A steady hand · Recover your archery\nVisit the training crystal to choose two archer skills.":Systems.StarterTraining.IsHealer(run)?"A healing instinct · Recover your training\nVisit the enchanted crystal to choose two healer skills.":Systems.StarterTraining.IsTank(run)?"The body remembers · Train as a Vanguard\nVisit the crystal on the potion counter to choose two techniques.":"A spark of memory · Awaken your magic\nVisit the enchanted crystal on the potion counter.","training_crystal");
         if (run.InductionStage == 3) return ("Ready to explore\nVisit the training crystal to select your two starter skills.","");
         if (run.CreationStage == 0) return ("1 · A stranger in the mirror\nClick the mirror beside the bed to discover your identity.","identity_mirror");
         if (run.CreationStage == 1) return ("2 · Remember your training\nClick the equipment rack to choose stats and collect your kit.","training_rack");
@@ -55,10 +55,14 @@ public partial class InteractionMarkers : Node2D
 {
     public Vector2? Hover { get; set; }
     public Vector2? Objective { get; set; }
-    private float _time;
-    public override void _Process(double delta) { _time += (float)delta; QueueRedraw(); }
+    private float _time, _markTime;
+    private Vector2 _destination;
+    public void Mark(Vector2 point) { _destination = point; _markTime = .8f; }
+    public override void _Process(double delta) { _time += (float)delta; _markTime = Mathf.Max(0, _markTime - (float)delta); QueueRedraw(); }
     public override void _Draw()
     {
+        if (_markTime > 0)
+            DrawArc(_destination, 10 + (1 - _markTime) * 8, 0, Mathf.Tau, 40, new Color("b8e7dc", _markTime), 2, true);
         if (Objective is Vector2 target)
         {
             var p = target + new Vector2(0,-27 + Mathf.Sin(_time*2)*3);
@@ -102,6 +106,7 @@ public partial class InteractionAudio : AudioStreamPlayer
     public void Cue(string key)
     {
         if (DisplayServer.GetName() == "headless" || Muted || !_clips.TryGetValue(key,out var clip)) return;
+        VolumeLinear = Systems.ComfortSettings.Master * Systems.ComfortSettings.Effects * .15f;
         Stream=clip; Play();
     }
 }

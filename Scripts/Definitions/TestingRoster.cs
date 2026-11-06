@@ -5,6 +5,6 @@ namespace DevilGate.Scripts.Definitions;
 public static class TestingRoster
 {
     public static bool Enabled { get; set; } = true;
-    public static bool AllowsArchetype(string id)=>!Enabled || id is Ids.ArchetypeMage or Ids.ArchetypeTank;
-    public static bool AllowsGender(string id,string archetype=Ids.ArchetypeMage)=>!Enabled || id==Ids.GenderFemale || (archetype is Ids.ArchetypeMage or Ids.ArchetypeTank && id==Ids.GenderMale);
+    public static bool AllowsArchetype(string id)=>!Enabled || id is Ids.ArchetypeMage or Ids.ArchetypeTank or Ids.ArchetypeHealer or Ids.ArchetypeArcher;
+    public static bool AllowsGender(string id,string archetype=Ids.ArchetypeMage)=>!Enabled || id==Ids.GenderFemale || (archetype is Ids.ArchetypeMage or Ids.ArchetypeTank or Ids.ArchetypeHealer or Ids.ArchetypeArcher && id==Ids.GenderMale);
 }

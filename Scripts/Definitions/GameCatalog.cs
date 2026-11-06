@@ -192,7 +192,7 @@ public sealed class GameCatalog
             new()
             {
                 Id = Ids.ItemManaPotion, DisplayName = "Mana Potion",
-                Description = "Restores 10 mana when used.",
+                Description = "Restores 10 mana or focus, depending on your class.",
                 Category = ItemCategory.ManaPotion, StackLimit = 9, ManaAmount = 10,
                 IconPath = $"res://Assets/Placeholders/Items/{Ids.ItemManaPotion}.png",
             },

@@ -27,6 +27,8 @@ public partial class ChestPanelController : PanelContainer, ICloseable
     private Label _chestLabel = null!;
     private GridContainer _backpackGrid = null!;
     private GridContainer _chestGrid = null!;
+    private readonly List<ItemCardController> _backpackCards = new();
+    private readonly List<ItemCardController> _chestCards = new();
     private TextureRect _detailsIcon = null!;
     private Label _detailsName = null!;
     private Label _detailsText = null!;
@@ -41,6 +43,12 @@ public partial class ChestPanelController : PanelContainer, ICloseable
     private ItemStack? _selStack;
     private ItemDefinition? _selDef;
 
+    public int SelectedSlot => _selSlot;
+    public bool IsChestSelection => _selSlot >= 0 && _selSide == Side.Chest;
+    public bool IsBackpackSelection => _selSlot >= 0 && _selSide == Side.Backpack;
+    public IReadOnlyList<ItemCardController> BackpackCards => _backpackCards;
+    public IReadOnlyList<ItemCardController> ChestCards => _chestCards;
+
     private static readonly PackedScene CardScene =
         GD.Load<PackedScene>("res://Scenes/ItemCard.tscn");
 
@@ -54,6 +62,8 @@ public partial class ChestPanelController : PanelContainer, ICloseable
         _detailsIcon = GetNode<TextureRect>("VBox/DetailsPanel/DetailsHBox/DetailsIcon");
         _detailsName = GetNode<Label>("%DetailsName");
         _detailsText = GetNode<Label>("%DetailsText");
+        _detailsName.ClipText = false;
+        _detailsName.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         _statusLabel = GetNode<Label>("%StatusLabel");
         _takeGoldButton = GetNode<Button>("%TakeGoldButton");
         _moveOneButton = GetNode<Button>("%MoveOneButton");
@@ -71,6 +81,15 @@ public partial class ChestPanelController : PanelContainer, ICloseable
             GameSession.Instance.StateChanged += OnExternalStateChange;
         }
 
+        var takeAll = new Button { Text = "Take all that fits", TooltipText = "Chest slot order; whole stacks only. Stacks that do not fit stay in the chest. Gold is collected too." };
+        _takeGoldButton.GetParent().AddChild(takeAll);
+        takeAll.Pressed += () => {
+            var run = GameSession.Instance?.CurrentRun;
+            if (run == null) return;
+            var summary = InventoryService.TakeAll(run, GameCatalog.Instance);
+            GameSession.Instance!.EmitChanged();
+            SetStatus(summary, StatusOk);
+        };
         Refresh();
     }
 
@@ -93,12 +112,11 @@ public partial class ChestPanelController : PanelContainer, ICloseable
         var run = GameSession.Instance?.CurrentRun;
         var catalog = GameCatalog.Instance;
 
-        ClearGrid(_backpackGrid);
-        ClearGrid(_chestGrid);
-        ClearSelection();
-
         if (run == null)
         {
+            ClearGrid(_backpackGrid, _backpackCards);
+            ClearGrid(_chestGrid, _chestCards);
+            ClearSelection();
             _backpackLabel.Text = "Backpack — 0/12";
             _chestLabel.Text = "Chest — 0/12";
             _goldLabel.Text = "Chest gold: 0";
@@ -112,9 +130,9 @@ public partial class ChestPanelController : PanelContainer, ICloseable
         _goldLabel.Text = $"Chest gold: {run.Chest.Gold}";
         _takeGoldButton.Disabled = run.Chest.Gold <= 0;
 
-        FillGrid(_backpackGrid, run.Backpack, Side.Backpack, catalog);
-        FillGrid(_chestGrid, run.Chest.Inventory, Side.Chest, catalog);
-        SetStatus("", StatusOk);
+        FillGrid(_backpackGrid, _backpackCards, run.Backpack, Side.Backpack, catalog);
+        FillGrid(_chestGrid, _chestCards, run.Chest.Inventory, Side.Chest, catalog);
+        RestoreSelection(run);
     }
 
     private static int CountUsed(InventoryState inv)
@@ -127,17 +145,31 @@ public partial class ChestPanelController : PanelContainer, ICloseable
         return n;
     }
 
-    private static void ClearGrid(GridContainer grid)
+    private static void ClearGrid(GridContainer grid, List<ItemCardController> cards)
     {
         foreach (var child in grid.GetChildren())
         {
             grid.RemoveChild(child);
             child.QueueFree();
         }
+        cards.Clear();
     }
 
-    private void FillGrid(GridContainer grid, InventoryState inv, Side side, GameCatalog catalog)
+    private void FillGrid(GridContainer grid, List<ItemCardController> cards, InventoryState inv, Side side, GameCatalog catalog)
     {
+        if (cards.Count != InventoryState.SlotCount)
+        {
+            ClearGrid(grid, cards);
+            for (var slot = 0; slot < InventoryState.SlotCount; slot++)
+            {
+                var card = CardScene.Instantiate<ItemCardController>();
+                card.Selected += s => OnCardSelected(side, s);
+                card.StackMoveRequested += s => { OnCardSelected(side, s); DoTransfer(true); };
+                grid.AddChild(card);
+                cards.Add(card);
+            }
+        }
+
         for (var slot = 0; slot < InventoryState.SlotCount; slot++)
         {
             var stack = inv[slot];
@@ -146,10 +178,33 @@ public partial class ChestPanelController : PanelContainer, ICloseable
             {
                 catalog.TryGetItem(stack.ItemId, out def);
             }
-            var card = CardScene.Instantiate<ItemCardController>();
-            card.Setup(slot, stack, def);
-            card.Selected += s => OnCardSelected(side, s);
-            grid.AddChild(card);
+            cards[slot].Setup(slot, stack, def);
+        }
+    }
+
+    private void RestoreSelection(RunState run)
+    {
+        if (_selSlot >= 0 && _selSlot < InventoryState.SlotCount)
+        {
+            var inv = _selSide == Side.Backpack ? run.Backpack : run.Chest.Inventory;
+            if (inv[_selSlot] != null)
+            {
+                OnCardSelected(_selSide, _selSlot, preserveStatus: true);
+                return;
+            }
+        }
+        ClearSelection();
+    }
+
+    private void UpdateCardHighlights()
+    {
+        for (var i = 0; i < _backpackCards.Count; i++)
+        {
+            _backpackCards[i].SetSelected(_selSide == Side.Backpack && _selSlot == i);
+        }
+        for (var i = 0; i < _chestCards.Count; i++)
+        {
+            _chestCards[i].SetSelected(_selSide == Side.Chest && _selSlot == i);
         }
     }
 
@@ -157,7 +212,7 @@ public partial class ChestPanelController : PanelContainer, ICloseable
     // Selection + details
     // ------------------------------------------------------------------
 
-    private void OnCardSelected(Side side, int slot)
+    private void OnCardSelected(Side side, int slot, bool preserveStatus = false)
     {
         var run = GameSession.Instance?.CurrentRun;
         if (run == null) return;
@@ -178,6 +233,7 @@ public partial class ChestPanelController : PanelContainer, ICloseable
         _selSlot = slot;
         _selStack = stack;
         _selDef = def;
+        UpdateCardHighlights();
 
         _detailsIcon.Texture = def.LoadIcon();
         _detailsIcon.Visible = _detailsIcon.Texture != null;
@@ -186,7 +242,7 @@ public partial class ChestPanelController : PanelContainer, ICloseable
 
         _moveOneButton.Disabled = false;
         _moveStackButton.Disabled = !def.IsStackable;
-        SetStatus("", StatusOk);
+        if (!preserveStatus) SetStatus("", StatusOk);
     }
 
     private void ClearSelection()
@@ -194,10 +250,11 @@ public partial class ChestPanelController : PanelContainer, ICloseable
         _selSlot = -1;
         _selStack = null;
         _selDef = null;
+        UpdateCardHighlights();
         _detailsIcon.Texture = null;
         _detailsIcon.Visible = false;
         _detailsName.Text = "Select an item";
-        _detailsText.Text = "Click a card to see details. Transfers move one item; “Move stack” moves the whole stack.";
+        _detailsText.Text = "Click for details. Shift-click moves a whole stack; visible buttons also transfer items.";
         _moveOneButton.Disabled = true;
         _moveStackButton.Disabled = true;
     }
