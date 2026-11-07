@@ -28,7 +28,7 @@ I will not buy extra credit just to squeeze out a bit more. It stops at the
 cut-off, and development carries on when there are leftover tokens again.
 
 When I was younger, I played far too much Shadowrun and fantasy RPGs. These
-days, I keep imagining waking up in another world—a neon-lit cyberpunk
+days, I imagine waking up in another world—a neon-lit cyberpunk
 universe where magic is real.
 
 Images and other game artwork are something I will create locally using
